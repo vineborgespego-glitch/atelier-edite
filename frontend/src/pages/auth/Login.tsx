@@ -27,12 +27,20 @@ export default function Login() {
         navigate('/app/dashboard');
       } else {
         // Register Request
-        const response = await api.post('/auth/register', { name, email, password });
+        // We use the same 'name' for both personal name and atelierName for simplicity on first step
+        const response = await api.post('/auth/register', { 
+          name: name, 
+          atelierName: name, 
+          email, 
+          password 
+        });
         localStorage.setItem('token', response.data.token);
         navigate('/app/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Ocorreu um erro inesperado.');
+      console.error('Auth Error:', err);
+      const msg = err.response?.data?.error || err.message || 'Erro de conexão com o servidor. Verifique o seu backend.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
