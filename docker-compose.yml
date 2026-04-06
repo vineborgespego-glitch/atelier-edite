@@ -1,0 +1,63 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: atelier_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-atelier}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atelierpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-atelier_edite}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-atelier}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: atelier_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-atelier}:${POSTGRES_PASSWORD:-atelierpassword}@postgres:5432/${POSTGRES_DB:-atelier_edite}
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      PORT: 3001
+      ATELIER_NAME: ${ATELIER_NAME:-Atelier Édite}
+      ATELIER_CPF: ${ATELIER_CPF:-000.000.000-00}
+      ATELIER_CNPJ: ${ATELIER_CNPJ:-}
+      ATELIER_EMAIL: ${ATELIER_EMAIL:-contato@atelieredite.com.br}
+      ATELIER_PHONE: ${ATELIER_PHONE:-+55 11 99999-9999}
+      ATELIER_ADDRESS: ${ATELIER_ADDRESS:-Rua das Costureiras, 123}
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-}
+      WHATSAPP_API_URL: ${WHATSAPP_API_URL:-https://api.whatshelp.io/v1}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - "3001:3001"
+    volumes:
+      - uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: atelier_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  uploads:

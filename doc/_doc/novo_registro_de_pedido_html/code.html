@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Novo Registro de Pedido - Aesthetic App</title>
+<!-- Tailwind CSS v3 CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Playfair Display for Serif elegance -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;display=swap" rel="stylesheet"/>
+<style data-purpose="custom-fonts">
+    body {
+      font-family: 'Playfair Display', serif;
+    }
+  </style>
+<style data-purpose="background-and-colors">:root {
+    --soft-pink-bg: #f9f2e8;
+    /* Soft cream/beige base */
+    --rose-gold-card: #b37b77;
+    /* Dusty rose/mauve card background */
+    --gold-accent: #d4af37;
+    --text-gold: #8b6e4e
+    }
+body {
+    background-color: var(--soft-pink-bg);
+    /* Background floral pattern as seen in reference */
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuDZdYtIbSB9C6PJBCC6L74qRVm3KbIipfWrpiMb1jaqd1j-ZcAUeFWEB6rZtvfZ266gG_95sBI4lN2XEs7ErhIwC3gwgfWgFDDW7wh1h2q27vte_Yyra_yygzP2FJgSZEhdO7CMzl_N3GLv1b3B0Cu1uLmNOK6pwhX4KHEsAwvFeH1VzF9NZMkjvaOacmXY4jVN1OdCsSZrE4RJIVw0ElIBRo8Y48v9FSgMiTWegclQSMd3__n_UxtnNtBCOqxl-2CobR0Ra7GepJ5p);
+    background-blend-mode: multiply;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden
+    }
+.main-card {
+    background-color: var(--rose-gold-card);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1)
+    }
+/* Input Glow Effect */
+.input-glow {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.5)
+    }
+/* Custom Checkmark Icon Simulation */
+.checkmark-accent::after {
+    content: "✓";
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    color: #b37b77;
+    font-weight: bold;
+    opacity: 0.6
+    }
+/* Ribbon/Bow accents simulated with pseudo-elements */
+.card-container {
+    position: relative
+    }
+/* Decoration: Top Right Bow Placeholder */
+.card-container::after {
+    content: "🎀";
+    position: absolute;
+    top: -15px;
+    right: -10px;
+    font-size: 2.5rem;
+    transform: rotate(15deg);
+    z-index: 10
+    }
+/* Decoration: Bottom Left Bow Placeholder */
+.card-container::before {
+    content: "🎀";
+    position: absolute;
+    bottom: -15px;
+    left: -10px;
+    font-size: 2.5rem;
+    transform: rotate(-15deg);
+    z-index: 10
+    }</style>
+<style data-purpose="button-styling">
+    .btn-gradient {
+      background: linear-gradient(to bottom, #d6a4a0, #b37b77);
+      border: 2px solid #e5c19e;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1), inset 0 0 10px rgba(255,255,255,0.3);
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body class="antialiased">
+<!-- BEGIN: Navigation Header -->
+<header class="w-full px-6 pt-12 pb-6 flex items-center justify-between">
+<button aria-label="Voltar" class="text-[var(--text-gold)] text-2xl">
+<svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-2xl font-semibold text-[var(--text-gold)] tracking-wide">
+      Novo Registro de Pedido
+    </h1>
+<div class="w-8"></div> <!-- Spacer for centering header title -->
+</header>
+<!-- END: Navigation Header -->
+<!-- BEGIN: Main Form Section -->
+<main class="flex-grow px-6 py-4 flex flex-col items-center">
+<div class="card-container w-full max-w-sm mt-8">
+<!-- Main Content Card -->
+<div class="main-card rounded-[40px] p-8 relative overflow-hidden" data-purpose="registration-form-card">
+<h2 class="text-white text-3xl italic text-center mb-8 font-light">
+          Detalhes do Pedido
+        </h2>
+<form action="#" class="space-y-6" method="POST">
+<!-- Service Description Field -->
+<div class="relative">
+<label class="block text-white text-lg mb-2 ml-1" for="descricao">Descrição do Serviço</label>
+<div class="relative checkmark-accent">
+<textarea class="input-glow w-full rounded-2xl border-none p-4 text-gray-700 focus:ring-2 focus:ring-[#e5c19e] placeholder-gray-400 italic" id="descricao" placeholder="Ex: Costura de vestido floral..." rows="3"></textarea>
+</div>
+</div>
+<!-- Order Value Field -->
+<div class="relative">
+<label class="block text-white text-lg mb-2 ml-1" for="valor">Valor do Pedido</label>
+<div class="relative checkmark-accent">
+<input class="input-glow w-full h-14 rounded-2xl border-none px-4 text-gray-700 focus:ring-2 focus:ring-[#e5c19e] text-lg" id="valor" type="text" value="R$  150,00"/>
+</div>
+</div>
+<!-- Delivery Date Field -->
+<div class="relative">
+<label class="block text-white text-lg mb-2 ml-1" for="prazo">Prazo de Entrega</label>
+<div class="relative checkmark-accent flex items-center">
+<div class="absolute left-4 pointer-events-none text-gray-500">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<input class="input-glow w-full h-14 rounded-2xl border-none pl-12 pr-4 text-gray-700 focus:ring-2 focus:ring-[#e5c19e] text-lg" id="prazo" type="text" value="25/05/2024"/>
+</div>
+</div>
+</form>
+</div>
+</div>
+<!-- BEGIN: Action Footer -->
+<div class="w-full max-w-sm mt-auto mb-12">
+<button class="btn-gradient w-full py-5 rounded-full text-2xl font-medium tracking-wide transition-transform active:scale-95" data-purpose="submit-button" type="submit">
+        Registrar Pedido
+      </button>
+</div>
+<!-- END: Action Footer -->
+</main>
+<!-- END: Main Form Section -->
+<!-- BEGIN: Decorative Overlay -->
+<!-- Handled via CSS background and pseudo-elements above for bows -->
+<!-- END: Decorative Overlay -->
+</body></html>

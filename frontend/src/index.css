@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-blush: #FDE8ED;
+  --color-rosegold: #B5777B;
+  --color-cream: #FEF2ED;
+  --color-mauve: #9B7E8A;
+  --color-dark: #4A3A3B;
+  --color-accent: #E5A8A8;
+  --color-success: #A3D9C9;
+  --color-warning: #F5D0A9;
+  --color-info: #A9D5F5;
+  
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+  
+  --shadow-soft: 0 4px 20px -2px rgba(181, 119, 123, 0.1);
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.04);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-dark);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    color: var(--color-dark);
+  }
+}
+
+@layer components {
+  .coquette-card {
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    border: 1px solid #F5E6E8;
+    padding: 1rem;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+  
+  .coquette-button {
+    font-family: var(--font-body);
+    font-weight: 500;
+    color: white;
+    background-image: linear-gradient(to right, var(--color-rosegold), var(--color-accent));
+    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    box-shadow: var(--shadow-soft);
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+  
+  .coquette-button:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-0.125rem);
+  }
+  
+  .coquette-input {
+    width: 100%;
+    background-color: white;
+    border: 1px solid #E8D5D7;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--color-dark);
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+  
+  .coquette-input:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-accent);
+    border-color: transparent;
+  }
+  
+  .glass-header {
+    background-color: rgba(254, 242, 237, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #F5E6E8;
+  }
+}

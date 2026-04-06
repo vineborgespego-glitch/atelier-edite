@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  IN_PRODUCTION
+  READY
+  DELIVERED
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  OTHER
+}
+
+enum CouponType {
+  FREE_SHIPPING
+  PERCENTAGE
+  FIXED_VALUE
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  EMAIL
+  SMS
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("OWNER") // OWNER, STAFF, ADMIN
+  atelierName  String?
+  phone        String?
+  logoUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  clients  Client[]
+  orders   Order[]
+  receipts Receipt[]
+  coupons  Coupon[]
+
+  @@map("users")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  email     String?
+  phone     String?
+  cpfCnpj  String?
+  address   String?
+  birthDate DateTime?
+  notes     String?
+
+  // Measures stored as JSON for flexibility
+  measures  Json?    // { bust, waist, hips, shoulder, length, ... }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders        Order[]
+  notifications Notification[]
+
+  @@map("clients")
+}
+
+model Order {
+  id           String        @id @default(uuid())
+  orderNumber  String        @unique // ORD-2024-0001
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId     String
+  client       Client        @relation(fields: [clientId], references: [id])
+
+  status       OrderStatus   @default(DRAFT)
+  title        String        // Ex: "Vestido de Festa Azul"
+  description  String?
+  notes        String?
+
+  dueDate      DateTime?
+  deliveredAt  DateTime?
+  paidAt       DateTime?
+
+  totalAmount  Decimal       @db.Decimal(10, 2) @default(0)
+  deposit      Decimal       @db.Decimal(10, 2) @default(0)
+  discount     Decimal       @db.Decimal(10, 2) @default(0)
+
+  paymentMethod PaymentMethod?
+  paymentNotes  String?
+
+  // Validation result stored as JSON
+  validationResult Json?
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  items         OrderItem[]
+  receipt       Receipt?
+  notifications Notification[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  description String
+  fabric      String?
+  quantity    Decimal  @db.Decimal(10, 3) @default(1)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+  notes       String?
+
+  createdAt   DateTime @default(now())
+
+  @@map("order_items")
+}
+
+model Receipt {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId       String        @unique
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  receiptNumber String        @unique
+  issuedAt      DateTime      @default(now())
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  amountInWords String        // "Duzentos e cinquenta reais"
+  paymentMethod PaymentMethod
+  pdfPath       String?
+
+  @@map("receipts")
+}
+
+model Coupon {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  code        String      @unique
+  type        CouponType
+  value       Decimal     @db.Decimal(10, 2) // % for PERCENTAGE, R$ for FIXED/FREE_SHIPPING
+  description String
+  isActive    Boolean     @default(true)
+
+  clientId    String?
+  minOrderValue Decimal?  @db.Decimal(10, 2)
+
+  usedAt      DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime    @default(now())
+
+  @@map("coupons")
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  orderId   String?
+  order     Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  clientId  String?
+  client    Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  channel   NotificationChannel
+  type      String              // ORDER_CONFIRMED, ORDER_READY, THANK_YOU, COUPON
+  message   String
+  status    String              @default("PENDING") // PENDING, SENT, FAILED
+  sentAt    DateTime?
+  error     String?
+  createdAt DateTime            @default(now())
+
+  @@map("notifications")
+}

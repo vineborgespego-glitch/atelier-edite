@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Acompanhamento de Status - Coquette Theme</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts for Aesthetic Look -->
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'coquette-pink': '#fdf2f2',
+            'coquette-rose': '#f3d1d1',
+            'coquette-green': '#dcfce7',
+            'coquette-purple': '#f3e8ff',
+            'coquette-blue': '#e0f2fe',
+            'coquette-border': '#e5d1d1',
+            'status-corte': '#f8bcc0',
+            'status-costura': '#bbf7d0',
+            'status-finalizado': '#e9d5ff',
+            'status-entregue': '#bae6fd',
+          },
+          fontFamily: {
+            sans: ['Quicksand', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-decorations">
+    /* Subtle background pattern to mimic the coquette aesthetic */
+    body {
+      background-color: #fffafb;
+      background-image: radial-gradient(#f3d1d1 0.5px, transparent 0.5px);
+      background-size: 24px 24px;
+    }
+
+    /* Soft inner glow and rounded styling for cards */
+    .coquette-card {
+      box-shadow: 0 4px 15px rgba(229, 209, 209, 0.3);
+      border: 1px solid #f2e1e1;
+      border-radius: 24px;
+      background: white;
+    }
+
+    /* Progress bar styling with lace-like appearance */
+    .lace-progress-bg {
+      height: 12px;
+      background: #fdf2f2;
+      border-radius: 999px;
+      border: 1px solid #f3d1d1;
+      position: relative;
+    }
+
+    .lace-progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      position: relative;
+    }
+
+    /* Custom heart-shaped thumb for progress */
+    .heart-thumb {
+      width: 20px;
+      height: 20px;
+      background: #f3d1d1;
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      transform: translateY(-50%) rotate(45deg);
+      border-radius: 3px;
+    }
+    .heart-thumb::before, .heart-thumb::after {
+      content: '';
+      width: 20px;
+      height: 20px;
+      background: #f3d1d1;
+      border-radius: 50%;
+      position: absolute;
+    }
+    .heart-thumb::before { left: -10px; top: 0; }
+    .heart-thumb::after { top: -10px; left: 0; }
+
+    /* Pipeline arrow shapes */
+    .pipeline-step {
+      position: relative;
+      clip-path: polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%, 15% 50%);
+      margin-right: -10px;
+    }
+    .pipeline-step:first-child {
+      clip-path: polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%);
+    }
+
+    /* Navigation glow */
+    .nav-active {
+      box-shadow: 0 0 15px rgba(243, 209, 209, 0.8);
+    }
+  </style>
+</head>
+<body class="min-h-screen text-stone-700 pb-24">
+<!-- BEGIN: Header -->
+<header class="p-6 bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-pink-100 flex items-center justify-between">
+<button class="p-2 hover:bg-pink-50 rounded-full transition-colors">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-xl font-bold text-stone-800">Acompanhamento de Status</h1>
+<button class="p-2 hover:bg-pink-50 rounded-full transition-colors">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21V12.748a2.25 2.25 0 00-.659-1.591L3.659 5.725A2.25 2.25 0 013 4.134V3.09c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</header>
+<!-- END: Header -->
+<main class="max-w-md mx-auto p-4 space-y-8">
+<!-- BEGIN: Pipeline Tracker -->
+<section class="flex justify-between items-center px-2" data-purpose="pipeline-tracker">
+<div class="flex flex-col items-center gap-1">
+<div class="pipeline-step w-20 h-10 bg-status-corte flex items-center justify-center text-stone-600 shadow-sm">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 11-4.243-4.243 3 3 0 014.243 4.243z" stroke-width="2"></path></svg>
+</div>
+<span class="text-xs font-semibold">Corte</span>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-50">
+<div class="pipeline-step w-20 h-10 bg-status-costura flex items-center justify-center text-stone-600">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.952 11.952 0 0112 15c-2.998 0-5.74-1.1-7.843-2.918M3.284 14.253A8.959 8.959 0 013 12c0-.778.099-1.533.284-2.253" stroke-width="2"></path></svg>
+</div>
+<span class="text-xs font-semibold">Costura</span>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-50">
+<div class="pipeline-step w-20 h-10 bg-status-finalizado flex items-center justify-center text-stone-600">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" stroke-width="2"></path></svg>
+</div>
+<span class="text-xs font-semibold">Finalizado</span>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-50">
+<div class="pipeline-step w-20 h-10 bg-status-entregue flex items-center justify-center text-stone-600">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" stroke-width="2"></path></svg>
+</div>
+<span class="text-xs font-semibold">Entregue</span>
+</div>
+</section>
+<!-- END: Pipeline Tracker -->
+<!-- BEGIN: Order List -->
+<section class="space-y-6" data-purpose="order-list">
+<!-- Order 1: Corte -->
+<article class="coquette-card p-5 relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-bold text-stone-800">Pedido #1234 - Maria Silva</h2>
+<div class="flex items-center gap-2 mt-2">
+<span class="px-3 py-1 bg-status-corte rounded-full text-stone-700 text-sm font-medium flex items-center gap-1">
+<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"></path></svg>
+                Corte
+              </span>
+<span class="text-stone-500 text-sm">Vestido Floral, Qtd: 50</span>
+</div>
+</div>
+<!-- Decorative Bow -->
+<div class="text-rose-200">
+<svg class="w-8 h-8" fill="currentColor" viewbox="0 0 24 24"><path d="M12,2A3,3 0 0,0 9,5C9,6.08 9.58,7.03 10.43,7.56C8.74,7.84 7.23,8.74 6.22,10C4.38,10 2.82,11.2 2.24,12.83C1.65,14.47 2.18,16.29 3.5,17.29C3.18,18.79 3.65,20.35 4.76,21.41C5.87,22.47 7.45,22.88 8.95,22.5C9.95,23.82 11.77,24.35 13.41,23.76C15.04,23.18 16.24,21.62 16.24,19.78C17.5,18.77 18.4,17.26 18.68,15.57C19.21,16.42 20.16,17 21.24,17A3,3 0 0,0 24.24,14C24.24,12.34 22.9,11 21.24,11C20.16,11 19.21,11.58 18.68,12.43C18.4,10.74 17.5,9.23 16.24,8.22C16.24,6.38 15.04,4.82 13.41,4.24C11.77,3.65 9.95,4.18 8.95,5.5C7.45,5.12 5.87,5.53 4.76,6.59C3.65,7.65 3.18,9.21 3.5,10.71C2.18,11.71 1.65,13.53 2.24,15.17C2.82,16.8 4.38,18 6.22,18C7.23,19.26 8.74,20.16 10.43,20.44C9.58,20.97 9,21.92 9,23A3,3 0 0,0 12,26" transform="scale(0.8) translate(5,5)"></path></svg>
+</div>
+</div>
+<!-- Progress Area -->
+<div class="mt-8 mb-4">
+<div class="flex justify-between items-end mb-2">
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest">Progresso</span>
+<span class="text-xs font-bold text-stone-600">25%</span>
+</div>
+<div class="lace-progress-bg">
+<div class="lace-progress-fill bg-status-corte" style="width: 25%;">
+<div class="heart-thumb"></div>
+</div>
+</div>
+</div>
+<div class="flex justify-end gap-3 mt-4 text-stone-400">
+<button class="hover:text-rose-400 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" stroke-width="2"></path></svg></button>
+<button class="hover:text-rose-400 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-width="2"></path></svg></button>
+<button class="hover:text-rose-400 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4.5 12.75l6 6 9-13.5" stroke-width="2.5"></path></svg></button>
+</div>
+</article>
+<!-- Order 2: Costura -->
+<article class="coquette-card p-5 relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-bold text-stone-800">Pedido #1235 - Ana Souza</h2>
+<div class="flex items-center gap-2 mt-2">
+<span class="px-3 py-1 bg-status-costura rounded-full text-stone-700 text-sm font-medium flex items-center gap-1">
+<svg class="w-3 h-3" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3" stroke-width="2"></path></svg>
+                Costura
+              </span>
+<span class="text-stone-500 text-sm">Blusa de Seda, Qtd: 30</span>
+</div>
+</div>
+<div class="text-rose-200">
+<svg class="w-8 h-8" fill="currentColor" viewbox="0 0 24 24"><path d="M12,2A3,3 0 0,0 9,5C9,6.08 9.58,7.03 10.43,7.56C8.74,7.84 7.23,8.74 6.22,10C4.38,10 2.82,11.2 2.24,12.83C1.65,14.47 2.18,16.29 3.5,17.29C3.18,18.79 3.65,20.35 4.76,21.41C5.87,22.47 7.45,22.88 8.95,22.5C9.95,23.82 11.77,24.35 13.41,23.76C15.04,23.18 16.24,21.62 16.24,19.78C17.5,18.77 18.4,17.26 18.68,15.57C19.21,16.42 20.16,17 21.24,17A3,3 0 0,0 24.24,14C24.24,12.34 22.9,11 21.24,11" transform="scale(0.8) translate(5,5)"></path></svg>
+</div>
+</div>
+<div class="mt-8 mb-4">
+<div class="flex justify-between items-end mb-2">
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest">Progresso</span>
+<span class="text-xs font-bold text-stone-600">50%</span>
+</div>
+<div class="lace-progress-bg">
+<div class="lace-progress-fill bg-status-costura" style="width: 50%;">
+<div class="heart-thumb"></div>
+</div>
+</div>
+</div>
+</article>
+<!-- Order 3: Finalizado -->
+<article class="coquette-card p-5 relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-bold text-stone-800">Pedido #1236 - Carla Santos</h2>
+<div class="flex items-center gap-2 mt-2">
+<span class="px-3 py-1 bg-status-finalizado rounded-full text-stone-700 text-sm font-medium flex items-center gap-1">
+<svg class="w-3 h-3" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 21a9.004 9.004 0 008.716-6.747" stroke-width="2"></path></svg>
+                Finalizado
+              </span>
+<span class="text-stone-500 text-sm">Saia Plissada, Qtd: 20</span>
+</div>
+</div>
+<div class="text-rose-200">
+<svg class="w-8 h-8" fill="currentColor" viewbox="0 0 24 24"><path d="M12,2A3,3 0 0,0 9,5C9,6.08 9.58,7.03 10.43,7.56" transform="scale(0.8) translate(5,5)"></path></svg>
+</div>
+</div>
+<div class="mt-8 mb-4">
+<div class="flex justify-between items-end mb-2">
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest">Progresso</span>
+<span class="text-xs font-bold text-stone-600">90%</span>
+</div>
+<div class="lace-progress-bg">
+<div class="lace-progress-fill bg-status-finalizado" style="width: 90%;">
+<div class="heart-thumb"></div>
+</div>
+</div>
+</div>
+</article>
+<!-- Order 4: Entregue -->
+<article class="coquette-card p-5 relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-bold text-stone-800">Pedido #1237 - Beatriz Lima</h2>
+<div class="flex items-center gap-2 mt-2">
+<span class="px-3 py-1 bg-status-entregue rounded-full text-stone-700 text-sm font-medium flex items-center gap-1">
+<svg class="w-3 h-3" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5" stroke-width="2"></path></svg>
+                Entregue
+              </span>
+<span class="text-stone-500 text-sm">Casaco de Lã, Qtd: 15</span>
+</div>
+</div>
+<div class="text-rose-200">
+<svg class="w-8 h-8" fill="currentColor" viewbox="0 0 24 24"><path d="M12,2A3,3 0 0,0 9,5" transform="scale(0.8) translate(5,5)"></path></svg>
+</div>
+</div>
+<div class="mt-8 mb-4">
+<div class="flex justify-between items-end mb-2">
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest">Progresso</span>
+<span class="text-xs font-bold text-stone-600">100%</span>
+</div>
+<div class="lace-progress-bg">
+<div class="lace-progress-fill bg-status-entregue" style="width: 100%;">
+<div class="heart-thumb"></div>
+</div>
+</div>
+</div>
+</article>
+</section>
+<!-- END: Order List -->
+</main>
+<!-- BEGIN: Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-pink-100 px-6 py-3 flex justify-between items-center z-50">
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-2 rounded-xl group-hover:bg-pink-50 transition-all">
+<svg class="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-bold text-stone-400">Pedidos</span>
+</button>
+<button class="flex flex-col items-center gap-1 group relative">
+<div class="p-2 rounded-xl bg-pink-100/50 nav-active transition-all">
+<svg class="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-bold text-rose-400">Produção</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-2 rounded-xl group-hover:bg-pink-50 transition-all">
+<svg class="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-bold text-stone-400">Inventário</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-2 rounded-xl group-hover:bg-pink-50 transition-all">
+<svg class="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-bold text-stone-400">Perfil</span>
+</button>
+</nav>
+<!-- END: Bottom Navigation -->
+</body></html>
