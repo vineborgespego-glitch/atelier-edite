@@ -32,7 +32,7 @@ app.use(morgan('dev'));
 
 // CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: true, // Allow the client's origin (Vercel) to talk to the server (Railway)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
