@@ -25,5 +25,9 @@ RUN npm run build
 # Create uploads directory
 RUN mkdir -p uploads
 
+# Railway uses PORT env var (defaults to 8080)
+ENV PORT=8080
+EXPOSE 8080
+
 # Starting command
 CMD ["npm", "start"]
