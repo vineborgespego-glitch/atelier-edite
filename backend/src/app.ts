@@ -30,12 +30,12 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
-// CORS
+// CORS (Permissivo para o deploy)
 app.use(cors({
-  origin: true, // Allow the client's origin (Vercel) to talk to the server (Railway)
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
 }));
 
 // Body parsing
@@ -44,6 +44,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static uploads
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+
+// Root route for Railway Health Check
+app.get('/', (_req, res) => {
+  res.send('🧶 Atelier Édite API is online!');
+});
 
 // Health check
 app.get('/health', (_req, res) => {

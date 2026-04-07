@@ -25,8 +25,5 @@ RUN npm run build
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Expose port
-EXPOSE 3001
-
-# Start command
+# Starting command
 CMD ["npm", "start"]

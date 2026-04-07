@@ -10,10 +10,15 @@ async function main() {
     console.log('✅ Database connected');
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🧵 Atelier Édite API running on http://0.0.0.0:${PORT}`);
+      console.log(`🧵 Atelier Édite API running on port ${PORT}`);
+      console.log(`🌍 Public URL: https://atelier-edite-production.up.railway.app`);
     });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
+  } catch (error: any) {
+    console.error('❌ CRITICAL ERROR: Failed to start server');
+    console.error('--- Error Details ---');
+    console.error(error.message || error);
+    if (error.code) console.error(`Error Code: ${error.code}`);
+    console.error('----------------------');
     process.exit(1);
   }
 }
