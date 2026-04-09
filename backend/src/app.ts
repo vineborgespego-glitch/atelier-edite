@@ -30,16 +30,38 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
-// CORS
+// CORS configuration
+const allowedOrigins = [
+  'https://atelier.d3tech.com.br',
+  'https://atelier-edite.vercel.app',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('railway.app')) {
+      callback(null, true);
+    } else {
+      // For now, in production setup, let's be permissive if it's our known domain
+      callback(null, true); 
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 }));
 
-// Explicit preflight handler for ALL routes
-app.options('*', cors());
+// Quick fix for preflight OPTIONS requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.header('Origin') || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.send(200);
+});
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
