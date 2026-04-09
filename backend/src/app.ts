@@ -30,26 +30,12 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
-// CORS — allow Vercel frontend + local dev
-const allowedOrigins = [
-  'https://atelier-edite.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-];
-
+// CORS
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
-      return callback(null, true);
-    }
-    // Still allow unknown origins for now (can restrict later)
-    return callback(null, true);
-  },
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Explicit preflight handler for ALL routes
