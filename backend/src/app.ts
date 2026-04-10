@@ -40,14 +40,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('railway.app')) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('d3tech.com.br')) {
       callback(null, true);
     } else {
-      // For now, in production setup, let's be permissive if it's our known domain
-      callback(null, true); 
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,

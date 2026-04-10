@@ -52,11 +52,12 @@ router.get('/kpis', async (req: AuthRequest, res: Response) => {
     })
   ]);
 
-  const revenue = monthlyRevenueAggr._sum.totalAmount || 0;
+  const revenue = monthlyRevenueAggr._sum?.totalAmount || 0;
 
   // Transform status aggregation for charts
-  const statusCounts = ordersByStatus.reduce((acc, curr) => {
-    acc[curr.status] = curr._count._all;
+  const statusCounts = ordersByStatus.reduce((acc, curr: any) => {
+    const count = curr._count?._all || curr._count || 0;
+    acc[curr.status] = typeof count === 'number' ? count : (count._all || 0);
     return acc;
   }, {} as Record<string, number>);
 
