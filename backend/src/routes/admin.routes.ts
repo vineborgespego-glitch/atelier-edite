@@ -72,23 +72,4 @@ router.get('/kpis', async (req: AuthRequest, res: Response) => {
       statusCounts
     }
   });
-});
-
-// DELETE /api/admin/reset-test-data (TEMPORARY)
-router.delete('/reset-test-data', async (req: AuthRequest, res: Response) => {
-  try {
-    await prisma.orderItem.deleteMany();
-    await prisma.notification.deleteMany();
-    await prisma.receipt.deleteMany();
-    await prisma.order.deleteMany();
-    await prisma.client.deleteMany();
-    await prisma.coupon.deleteMany();
-
-    return res.json({ success: true, message: 'Dados de teste limpos com sucesso. O banco está pronto para uso oficial.' });
-  } catch (error: any) {
-    console.error('Erro ao resetar o banco:', error);
-    return res.status(500).json({ error: 'Erro interno ao limpar dados' });
-  }
-});
-
 export default router;

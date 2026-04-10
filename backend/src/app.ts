@@ -77,21 +77,6 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'Atelier Édite API', version: '1.0.0' });
 });
 
-import { prisma } from './lib/prisma';
-app.delete('/api/wipe-db-temp', async (_req, res) => {
-  try {
-    await prisma.orderItem.deleteMany();
-    await prisma.notification.deleteMany();
-    await prisma.receipt.deleteMany();
-    await prisma.order.deleteMany();
-    await prisma.client.deleteMany();
-    await prisma.coupon.deleteMany();
-    res.json({ success: true, message: 'DB limpo com sucesso.' });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
