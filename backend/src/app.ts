@@ -74,7 +74,7 @@ app.get('/', (_req, res) => {
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'Atelier Édite API', version: '1.0.0' });
+  res.json({ status: 'ok', service: 'Atelier Édite API', version: '1.0.1' });
 });
 
 // API Routes
