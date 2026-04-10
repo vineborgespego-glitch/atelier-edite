@@ -18,7 +18,7 @@ export async function generateReceiptPDF(
     try {
       // Custom Page Size: 80mm width (226.77 points), height flexible (e.g. 600 points)
       const doc = new PDFDocument({ 
-        size: [226.77, 750], // 80mm wide, taller to fit larger fonts
+        size: [226.77, 850], // 80mm wide, tall enough for all-bold text
         margin: 15 
       });
       const fileName = `receipt-${receiptNumber}.pdf`;
@@ -36,15 +36,20 @@ export async function generateReceiptPDF(
       // Force pure black for all text (prevents faded print on thermal printers)
       doc.fillColor('#000000');
 
+      // ============================================================
+      // ALL text uses Courier-Bold to ensure thick strokes on thermal
+      // printers. Regular Courier has thin lines that fade/break.
+      // ============================================================
+
       // --- HEADER ---
       doc.fontSize(16).font('Courier-Bold').text('EDITE BORGES', { align: 'center' });
-      doc.fontSize(10).font('Courier').text('ATELIER DE COSTURA', { align: 'center' });
+      doc.fontSize(11).font('Courier-Bold').text('ATELIER DE COSTURA', { align: 'center' });
       doc.moveDown(0.5);
       doc.text('----------------------------------', { align: 'center' });
       doc.moveDown(0.5);
 
       // --- ORDER INFO ---
-      doc.fontSize(11).font('Courier');
+      doc.fontSize(11).font('Courier-Bold');
       doc.text(`PEDIDO: #${order.orderNumber.split('-').pop() || order.id.slice(-4)}`);
       doc.text(`DATA: ${order.createdAt.toLocaleDateString('pt-BR')}`);
       doc.text(`CLIENTE: ${order.client.name.toUpperCase()}`);
@@ -53,11 +58,11 @@ export async function generateReceiptPDF(
       doc.moveDown(0.5);
 
       // --- ITEMS ---
-      doc.fontSize(10).font('Courier');
+      doc.fontSize(11).font('Courier-Bold');
       order.items.forEach(item => {
         const qty = Number(item.quantity);
         const subtotal = Number(item.subtotal).toFixed(2).replace('.', ',');
-        doc.text(`${qty}x ${item.description.slice(0, 20)}`, { continued: true });
+        doc.text(`${qty}x ${item.description.slice(0, 18)}`, { continued: true });
         doc.text(` R$ ${subtotal}`, { align: 'right' });
       });
       doc.moveDown(0.5);
@@ -73,7 +78,7 @@ export async function generateReceiptPDF(
       if (order.paidAt) {
         const currentY = doc.y;
         doc.rect(20, currentY, 187, 25).stroke();
-        doc.fontSize(12).text('*** PAGO ***', 20, currentY + 8, { align: 'center', width: 187 });
+        doc.fontSize(12).font('Courier-Bold').text('*** PAGO ***', 20, currentY + 8, { align: 'center', width: 187 });
         doc.moveDown(1.5);
         
         const methodMap: any = {
@@ -83,7 +88,7 @@ export async function generateReceiptPDF(
           'DEBIT_CARD': 'CARTÃO DÉBITO'
         };
         const method = methodMap[order.paymentMethod || ''] || 'OUTRO';
-        doc.fontSize(10).font('Courier').text(`FORMA: ${method}`, { align: 'center' });
+        doc.fontSize(11).font('Courier-Bold').text(`FORMA: ${method}`, { align: 'center' });
         doc.moveDown(1);
       }
 
@@ -91,15 +96,15 @@ export async function generateReceiptPDF(
       const pickupY = doc.y;
       doc.rect(20, pickupY, 187, 40).stroke();
       const dueDateStr = order.dueDate ? order.dueDate.toLocaleDateString('pt-BR') : 'A Combinar';
-      doc.fontSize(10).font('Courier').text('PREVISÃO DE RETIRADA:', 20, pickupY + 8, { align: 'center', width: 187 });
+      doc.fontSize(11).font('Courier-Bold').text('PREVISÃO DE RETIRADA:', 20, pickupY + 8, { align: 'center', width: 187 });
       doc.fontSize(14).font('Courier-Bold').text(dueDateStr, 20, pickupY + 22, { align: 'center', width: 187 });
       doc.moveDown(4.5);
 
-      // --- INSTRUÇÕES (EXATO DA IMAGEM) ---
+      // --- INSTRUÇÕES ---
       doc.fillColor('#000000');
       doc.fontSize(11).font('Courier-Bold').text('Instruções', { align: 'center', underline: true });
       doc.moveDown(0.5);
-      doc.fontSize(9).font('Courier');
+      doc.fontSize(10).font('Courier-Bold');
       doc.text('1 - O pagamento pode ser realizado via PIX, em dinheiro ou no cartão à vista.', { align: 'center', width: 187 });
       doc.moveDown(0.4);
       doc.text('2 - Caso o pedido não seja retirado em até 3 meses, ele poderá ser vendido, configurando desistência por parte do cliente.', { align: 'center', width: 187 });
@@ -111,17 +116,17 @@ export async function generateReceiptPDF(
 
       // --- CONTATO E LOCALIZAÇÃO ---
       doc.fontSize(11).font('Courier-Bold').text('Contato e Localização', { align: 'center', underline: true });
-      doc.fontSize(9).font('Courier');
+      doc.fontSize(10).font('Courier-Bold');
       doc.text('Endereço: Desembargador Otávio do Amaral, 547 - Bigorrilho', { align: 'center' });
       doc.text('Horário de Funcionamento: Segunda à Sexta: 09:00 - 18:00', { align: 'center' });
       doc.moveDown(0.5);
       doc.fontSize(13).font('Courier-Bold').text('(41) 99593-7861 PIX', { align: 'center' });
-      doc.fontSize(9).font('Courier');
+      doc.fontSize(10).font('Courier-Bold');
       doc.text('Instagram: @borgesmariaedite', { align: 'center' });
       doc.moveDown(1.5);
 
       // --- FOOTER ---
-      doc.fontSize(9).font('Courier').text('OBRIGADO PELA PREFERENCIA!', { align: 'center' });
+      doc.fontSize(10).font('Courier-Bold').text('OBRIGADO PELA PREFERENCIA!', { align: 'center' });
       doc.text('DEUS ABENÇOE SEU DIA.', { align: 'center' });
 
       doc.end();
