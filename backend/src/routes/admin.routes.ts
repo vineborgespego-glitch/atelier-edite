@@ -31,7 +31,7 @@ router.get('/kpis', async (req: AuthRequest, res: Response) => {
     prisma.order.count({ 
       where: { 
         userId, 
-        status: { in: ['DRAFT', 'CONFIRMED', 'IN_PRODUCTION', 'READY'] } 
+        status: { in: ['DRAFT', 'CONFIRMED', 'IN_PRODUCTION', 'READY', 'PAID'] } 
       } 
     }),
     prisma.order.aggregate({

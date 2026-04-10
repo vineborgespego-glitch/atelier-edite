@@ -42,8 +42,8 @@ export default function Dashboard() {
         const counts = response.data.charts?.statusCounts || {};
         const corte = (counts['DRAFT'] || 0) + (counts['CONFIRMED'] || 0);
         const costura = counts['IN_PRODUCTION'] || 0;
-        const finalizado = counts['READY'] || 0;
-        const entregue = (counts['DELIVERED'] || 0) + (counts['PAID'] || 0);
+        const finalizado = (counts['READY'] || 0) + (counts['PAID'] || 0);
+        const entregue = counts['DELIVERED'] || 0;
         setStatusChart([corte, costura, finalizado, entregue]);
 
       } catch (error) {
