@@ -52,8 +52,19 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 router.post('/', async (req: AuthRequest, res: Response) => {
   const { clientId, title, description, dueDate, discount = 0, isPaid = false, paymentMethod, items } = req.body;
 
-  if (!clientId || !title || !items || !Array.isArray(items)) {
-    return res.status(400).json({ error: 'Cliente, título e itens são obrigatórios' });
+  // Debug log for production diagnostics
+  console.log('Order Creation Request:', {
+    hasClientId: !!clientId,
+    clientIdValue: clientId,
+    hasTitle: !!title,
+    hasItems: !!items && Array.isArray(items),
+    itemsCount: Array.isArray(items) ? items.length : 0
+  });
+
+  if (!clientId) return res.status(400).json({ error: 'Faltando: ID da Cliente' });
+  if (!title) return res.status(400).json({ error: 'Faltando: Título/Descrição do Serviço' });
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Faltando: Itens do Serviço' });
   }
 
   // Calculate totals
