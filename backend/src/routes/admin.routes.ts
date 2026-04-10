@@ -22,7 +22,12 @@ router.get('/kpis', async (req: AuthRequest, res: Response) => {
     ordersByStatus
   ] = await Promise.all([
     prisma.client.count({ where: { userId } }),
-    prisma.order.count({ where: { userId } }),
+    prisma.order.count({ 
+      where: { 
+        userId,
+        status: { not: 'ARCHIVED' }
+      } 
+    }),
     prisma.order.count({ 
       where: { 
         userId, 
@@ -34,12 +39,15 @@ router.get('/kpis', async (req: AuthRequest, res: Response) => {
       where: {
         userId,
         createdAt: { gte: startOfMonth, lte: endOfMonth },
-        status: { not: 'CANCELLED' }
+        status: { notIn: ['CANCELLED', 'ARCHIVED'] }
       }
     }),
     prisma.order.groupBy({
       by: ['status'],
-      where: { userId },
+      where: { 
+        userId,
+        status: { not: 'ARCHIVED' }
+      },
       _count: { _all: true }
     })
   ]);

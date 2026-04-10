@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer } from 'lucide-react';
+import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Visual → Backend status map
@@ -49,6 +49,39 @@ export default function OrdersKanban() {
       alert(`Erro ao gerar recibo: ${error.response?.data?.error || error.message}`);
     } finally {
       setGeneratingId(null);
+    }
+  };
+
+  const handleNextStatus = async (orderId: string, currentVisualStatus: string) => {
+    const statusOrder = ['Recebido', 'Em Costura', 'Pronto', 'Entregue'];
+    const currentIndex = statusOrder.indexOf(currentVisualStatus);
+    if (currentIndex === -1 || currentIndex === statusOrder.length - 1) return;
+
+    const nextVisualStatus = statusOrder[currentIndex + 1];
+    const backendStatus = VISUAL_TO_BACKEND[nextVisualStatus];
+
+    try {
+      await api.patch(`/orders/${orderId}/status`, { status: backendStatus });
+      setOrders(prev => prev.map(o => {
+        if (o.id !== orderId) return o;
+        const progress = nextVisualStatus === 'Recebido' ? 25 : nextVisualStatus === 'Em Costura' ? 50 : nextVisualStatus === 'Pronto' ? 75 : 100;
+        return { ...o, status: nextVisualStatus, progress };
+      }));
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Erro ao avançar pedido.');
+    }
+  };
+
+  const handleArchive = async (orderId: string) => {
+    if (!window.confirm('Deseja arquivar este pedido? Ele sairá da tela principal e irá para o histórico.')) return;
+
+    try {
+      await api.patch(`/orders/${orderId}/status`, { status: 'ARCHIVED' });
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch (error) {
+      console.error('Error archiving order:', error);
+      alert('Erro ao arquivar pedido.');
     }
   };
 
@@ -225,19 +258,41 @@ export default function OrdersKanban() {
                     <div className={`absolute top-0 left-0 h-full ${col.bar} rounded-full transition-all duration-500`} style={{ width: `${order.progress}%` }}></div>
                   </div>
 
-                  {/* Receipt Generator Button */}
-                  <div className="pt-2 mt-2 border-t border-[#F5E6E8] flex justify-end">
+                  {/* Actions Bar */}
+                  <div className="pt-2 mt-2 border-t border-[#F5E6E8] flex justify-between items-center">
+                    <div className="flex space-x-2">
+                      {order.status !== 'Entregue' ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleNextStatus(order.id, order.status); }}
+                          className="flex items-center space-x-1 text-[10px] text-rosegold hover:bg-blush/30 px-2 py-1 rounded transition-colors font-bold uppercase tracking-tighter border border-blush"
+                          title="Avançar para o próximo status"
+                        >
+                          <ChevronRight size={14} />
+                          <span>Avançar</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleArchive(order.id); }}
+                          className="flex items-center space-x-1 text-[10px] text-mauve hover:bg-dark hover:text-white px-2 py-1 rounded transition-colors font-bold uppercase tracking-tighter border border-mauve"
+                          title="Arquivar pedido entregue"
+                        >
+                          <Archive size={14} />
+                          <span>Arquivar</span>
+                        </button>
+                      )}
+                    </div>
+
                     <button
                       onClick={(e) => { e.stopPropagation(); handleGenerateReceipt(order.id); }}
                       disabled={generatingId === order.id}
-                      className="flex items-center space-x-1 text-xs text-rosegold hover:text-dark transition-colors font-medium border border-[#F5E6E8] hover:border-rosegold rounded-md px-2 py-1 bg-white disabled:opacity-50"
+                      className="flex items-center space-x-1 text-[10px] text-mauve/60 hover:text-rosegold transition-colors font-medium rounded-md px-1 py-1"
                     >
                       {generatingId === order.id ? (
-                        <Loader2 size={14} className="animate-spin" />
+                        <Loader2 size={12} className="animate-spin" />
                       ) : (
-                        <FileText size={14} />
+                        <Printer size={12} />
                       )}
-                      <span>{generatingId === order.id ? 'Gerando...' : 'Gerar PDF'}</span>
+                      <span>Recibo</span>
                     </button>
                   </div>
                 </div>

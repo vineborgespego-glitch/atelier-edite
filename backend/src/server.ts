@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import app from './app';
 import { prisma } from './lib/prisma';
+import { runAutoArchive } from './services/autoArchive';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
@@ -12,6 +13,10 @@ async function main() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🧵 Atelier Édite API running on port ${PORT}`);
       console.log(`🌍 Public URL: https://atelier-edite-production.up.railway.app`);
+      
+      // Initial run and schedule every 24h
+      runAutoArchive();
+      setInterval(runAutoArchive, 24 * 60 * 60 * 1000); 
     });
   } catch (error: any) {
     console.error('❌ CRITICAL ERROR: Failed to start server');

@@ -9,11 +9,18 @@ router.use(authenticate);
 
 // GET /api/orders
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const { status, clientId, page = '1', limit = '20' } = req.query as Record<string, string>;
+  const { status, clientId, page = '1', limit = '20', includeArchived = 'false' } = req.query as Record<string, string>;
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const where: any = { userId: req.userId };
-  if (status) where.status = status;
+  
+  if (status) {
+    where.status = status;
+  } else if (includeArchived !== 'true') {
+    // Hide archived by default
+    where.status = { not: 'ARCHIVED' };
+  }
+
   if (clientId) where.clientId = clientId;
 
   const [orders, total] = await Promise.all([
