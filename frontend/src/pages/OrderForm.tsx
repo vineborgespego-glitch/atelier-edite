@@ -98,7 +98,13 @@ export default function OrderForm() {
           name: clientName,
           phone: clientPhone
         });
-        finalClientId = clientRes.data.id;
+        // API returns { client: { id, name, ... } }
+        finalClientId = clientRes.data.client?.id || clientRes.data.id;
+        if (!finalClientId) {
+          setError('Erro ao cadastrar cliente. Verifique os dados e tente novamente.');
+          setLoading(false);
+          return;
+        }
       } else {
         finalClientId = clientId;
       }
