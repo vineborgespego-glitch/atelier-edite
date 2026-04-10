@@ -29,5 +29,5 @@ RUN mkdir -p uploads
 ENV PORT=8080
 EXPOSE 8080
 
-# Starting command
-CMD ["npm", "start"]
+# Starting command: Apply migrations then start
+CMD npx prisma migrate deploy && npm start

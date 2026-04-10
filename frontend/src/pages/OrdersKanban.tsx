@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive } from 'lucide-react';
+import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Visual → Backend status map
@@ -82,6 +82,16 @@ export default function OrdersKanban() {
     } catch (error) {
       console.error('Error archiving order:', error);
       alert('Erro ao arquivar pedido.');
+    }
+  };
+
+  const handleMarkAsPaid = async (orderId: string) => {
+    try {
+      await api.patch(`/orders/${orderId}/pay`);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, isPaid: true } : o));
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+      alert('Erro ao registrar pagamento.');
     }
   };
 
@@ -261,6 +271,17 @@ export default function OrdersKanban() {
                   {/* Actions Bar */}
                   <div className="pt-2 mt-2 border-t border-[#F5E6E8] flex justify-between items-center">
                     <div className="flex space-x-2">
+                      {!order.isPaid && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMarkAsPaid(order.id); }}
+                          className="flex items-center space-x-1 text-[10px] text-emerald-600 hover:bg-emerald-50 px-2 py-1 rounded transition-colors font-bold uppercase tracking-tighter border border-emerald-200"
+                          title="Marcar como Pago"
+                        >
+                          <DollarSign size={14} />
+                          <span>Pagar</span>
+                        </button>
+                      )}
+                      
                       {order.status !== 'Entregue' ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleNextStatus(order.id, order.status); }}

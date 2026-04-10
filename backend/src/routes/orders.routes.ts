@@ -165,6 +165,24 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
   return res.json({ order });
 });
 
+// PATCH /api/orders/:id/pay
+router.patch('/:id/pay', async (req: AuthRequest, res: Response) => {
+  const existing = await prisma.order.findFirst({
+    where: { id: req.params.id, userId: req.userId },
+  });
+  if (!existing) return res.status(404).json({ error: 'Pedido não encontrado' });
+
+  const order = await prisma.order.update({
+    where: { id: req.params.id },
+    data: { 
+      paidAt: new Date(),
+      status: existing.status === 'READY' ? 'PAID' : existing.status // Opcional: ajustar status se necessário
+    },
+  });
+
+  return res.json({ order });
+});
+
 // DELETE /api/orders/:id
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   const existing = await prisma.order.findFirst({
