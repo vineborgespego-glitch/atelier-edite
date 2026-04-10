@@ -34,7 +34,8 @@ app.use(morgan('dev'));
 const allowedOrigins = [
   'https://atelier.d3tech.com.br',
   'https://atelier-edite.vercel.app',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'http://localhost:3000',
 ];
 
 app.use(cors({
