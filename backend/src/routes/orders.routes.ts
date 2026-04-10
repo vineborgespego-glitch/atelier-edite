@@ -61,7 +61,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     itemsCount: Array.isArray(items) ? items.length : 0
   });
 
-  if (!clientId) return res.status(400).json({ error: 'Faltando: ID da Cliente' });
+  if (!clientId) {
+    return res.status(400).json({ 
+      error: `Faltando: ID da Cliente (Recebido: "${clientId}")` 
+    });
+  }
   if (!title) return res.status(400).json({ error: 'Faltando: Título/Descrição do Serviço' });
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Faltando: Itens do Serviço' });

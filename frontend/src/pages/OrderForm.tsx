@@ -117,6 +117,10 @@ export default function OrderForm() {
         if (paymentMethod === 'Cartão' && cardType === 'Crédito') finalPaymentMethod = 'CREDIT_CARD';
       }
 
+      // Debug logs
+      console.log('Final Client ID:', finalClientId);
+      console.log('Formatted Items:', formattedItems);
+
       // Cria pedido
       await api.post('/orders', {
         clientId: finalClientId,
