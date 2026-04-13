@@ -51,6 +51,11 @@ model User {
   atelierName  String?
   phone        String?
   logoUrl      String?
+  
+  isVerified          Boolean   @default(false)
+  verificationCode    String?
+  verificationExpires DateTime?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

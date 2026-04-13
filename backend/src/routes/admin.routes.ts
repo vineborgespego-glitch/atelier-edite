@@ -72,4 +72,6 @@ router.get('/kpis', async (req: AuthRequest, res: Response) => {
       statusCounts
     }
   });
+});
+
 export default router;
