@@ -30,7 +30,7 @@ export default function Login() {
         navigate('/app/dashboard');
       } else {
         // Register Request
-        const response = await api.post('/auth/register', { 
+        await api.post('/auth/register', { 
           name: name, 
           atelierName: name, 
           email, 
