@@ -22,7 +22,7 @@ RUN echo "Rebuilding with cache bust: $CACHEBUST"
 
 # Copy source and build
 COPY . .
-RUN npm run build
+RUN npx vite build
 
 # Stage 2: Serve with Nginx for EasyPanel
 FROM nginx:alpine
