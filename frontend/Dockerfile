@@ -16,6 +16,10 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
+# Force cache invalidation to ensure fresh build (increment on each deploy)
+ARG CACHEBUST=2
+RUN echo "Rebuilding with cache bust: $CACHEBUST"
+
 # Copy source and build
 COPY . .
 RUN npm run build
