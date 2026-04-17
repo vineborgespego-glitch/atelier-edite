@@ -20,9 +20,12 @@ async function main() {
       console.log('ℹ️ ARCHIVED status already exists or skipped');
     }
 
+    const dbHost = process.env.DATABASE_URL?.split('@')[1] || 'URL não definida';
+    console.log(`📡 Database Host: ${dbHost.split(':')[0]}`);
+    console.log(`🚀 Env: ${process.env.NODE_ENV || 'development'}`);
+
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🧵 Atelier Édite API running on port ${PORT}`);
-      console.log(`🌍 Public URL: https://atelier-edite-production.up.railway.app`);
       
       // Initial run and schedule every 24h
       runAutoArchive();
