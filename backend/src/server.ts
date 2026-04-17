@@ -12,14 +12,6 @@ async function main() {
     await prisma.$connect();
     console.log('✅ Database connected');
 
-    // Ensure ARCHIVED status exists in the enum (safe, idempotent)
-    try {
-      await prisma.$executeRawUnsafe(`ALTER TYPE "OrderStatus" ADD VALUE IF NOT EXISTS 'ARCHIVED'`);
-      console.log('✅ OrderStatus enum up-to-date');
-    } catch (e) {
-      console.log('ℹ️ ARCHIVED status already exists or skipped');
-    }
-
     const dbHost = process.env.DATABASE_URL?.split('@')[1] || 'URL não definida';
     console.log(`📡 Database Host: ${dbHost.split(':')[0]}`);
     console.log(`🚀 Env: ${process.env.NODE_ENV || 'development'}`);
