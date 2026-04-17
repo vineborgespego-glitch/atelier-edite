@@ -1,4 +1,6 @@
-import 'dotenv/config';
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 import app from './app';
 import { prisma } from './lib/prisma';
 import { runAutoArchive } from './services/autoArchive';
