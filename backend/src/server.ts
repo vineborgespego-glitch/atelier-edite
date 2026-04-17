@@ -28,8 +28,13 @@ async function main() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🧵 Atelier Édite API running on port ${PORT}`);
       
-      // Initial run and schedule every 24h
-      runAutoArchive();
+      // Delay initial run by 1 minute to allow server to stabilize
+      setTimeout(() => {
+        console.log('🤖 Starting initial auto-archive pass...');
+        runAutoArchive();
+      }, 60000);
+
+      // Schedule every 24h
       setInterval(runAutoArchive, 24 * 60 * 60 * 1000); 
     });
   } catch (error: any) {
