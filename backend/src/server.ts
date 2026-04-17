@@ -20,6 +20,20 @@ async function main() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🧵 Atelier Édite API running on port ${PORT}`);
       
+      // Monitorar ping do Health Check
+      app.use((req, res, next) => {
+        if (req.path === '/' || req.path === '/health') {
+          console.log(`💓 Health check received from: ${req.ip}`);
+        }
+        next();
+      });
+
+      // Capturar sinal de desligamento para saber quem matou o processo
+      process.on('SIGTERM', () => {
+        console.log('🛑 SIGTERM received: Server is being killed by the orchestrator (Easypanel/Docker)');
+        process.exit(0);
+      });
+
       // Delay initial run by 1 minute to allow server to stabilize
       setTimeout(() => {
         console.log('🤖 Starting initial auto-archive pass...');
