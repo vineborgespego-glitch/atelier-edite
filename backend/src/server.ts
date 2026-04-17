@@ -14,18 +14,19 @@ async function main() {
 
     const dbHost = process.env.DATABASE_URL?.split('@')[1] || 'URL não definida';
     console.log(`📡 Database Host: ${dbHost.split(':')[0]}`);
-    console.log(`🚀 Env: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🚀 Env: ${process.env.NODE_ENV || 'production'}`);
     console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configurado ✅' : 'Usando padrão inseguro ⚠️'}`);
 
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🧵 Atelier Édite API running on port ${PORT}`);
+    // GARANTIR QUE RODAMOS NA 8080 QUE ESTÁ NO DOCKERFILE
+    const FINAL_PORT = 8080;
+
+    app.listen(FINAL_PORT, '0.0.0.0', () => {
+      console.log(`🧵 Atelier Édite API running on port ${FINAL_PORT}`);
       
-      // Monitorar ping do Health Check
-      app.use((req, res, next) => {
-        if (req.path === '/' || req.path === '/health') {
-          console.log(`💓 Health check received from: ${req.ip}`);
-        }
-        next();
+      // Monitorar ping do Health Check de forma simplificada
+      app.get('/ping', (req, res) => {
+        console.log('💓 PING (Health Check) received');
+        res.send('pong');
       });
 
       // Capturar sinal de desligamento para saber quem matou o processo
