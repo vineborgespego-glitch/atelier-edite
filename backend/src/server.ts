@@ -23,6 +23,7 @@ async function main() {
     const dbHost = process.env.DATABASE_URL?.split('@')[1] || 'URL não definida';
     console.log(`📡 Database Host: ${dbHost.split(':')[0]}`);
     console.log(`🚀 Env: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configurado ✅' : 'Usando padrão inseguro ⚠️'}`);
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🧵 Atelier Édite API running on port ${PORT}`);
