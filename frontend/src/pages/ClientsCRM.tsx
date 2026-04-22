@@ -30,9 +30,9 @@ export default function ClientsCRM() {
         const formatted = response.data.clients.map((c: any) => ({
           id: c.id,
           name: c.name,
-          cpf: c.cpf,
-          cnpj: c.cnpj,
-          alert: (!c.cpf && !c.cnpj) ? 'Documento ausente, por favor verificar.' : undefined,
+          phone: c.phone,
+          cpfCnpj: c.cpfCnpj,
+          alert: !c.cpfCnpj ? 'Documento ausente, por favor verificar.' : undefined,
           expanded: false,
           orders: (c.orders || []).map((o: any) => {
             let color = 'bg-blush';
