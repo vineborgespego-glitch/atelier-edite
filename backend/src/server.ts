@@ -30,8 +30,8 @@ async function main() {
     console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configurado ✅' : 'Usando padrão inseguro ⚠️'}`);
     console.log(`⏱️ DB Timeouts: ${hasTimeouts ? 'Configurados ✅' : 'Não detectados (Recomendado: connect_timeout=30) ⚠️'}`);
 
-    // GARANTIR QUE RODAMOS NA 8080 QUE ESTÁ NO DOCKERFILE
-    const FINAL_PORT = 8080;
+    // FORÇAR PORTA 80 (PADRÃO UNIVERSAL)
+    const FINAL_PORT = 80;
 
     app.listen(FINAL_PORT, '0.0.0.0', () => {
       console.log(`🧵 Atelier Édite API running on port ${FINAL_PORT}`);
@@ -39,7 +39,11 @@ async function main() {
       // Monitorar ping do Health Check de forma simplificada
       app.get('/ping', (req, res) => {
         console.log('💓 PING (Health Check) received');
-        res.send('pong');
+        res.status(200).send('pong');
+      });
+      
+      app.get('/health', (req, res) => {
+        res.status(200).json({ status: 'ok' });
       });
 
       // Capturar sinal de desligamento para saber quem matou o processo
