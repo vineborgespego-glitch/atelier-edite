@@ -79,7 +79,6 @@ async function main() {
 
       // Schedule every 24h
       setInterval(runAutoArchive, 24 * 60 * 60 * 1000); 
-    });
   } catch (error: any) {
     console.error('❌ CRITICAL ERROR: Failed to start server');
     console.error('--- Error Details ---');
