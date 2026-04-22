@@ -144,7 +144,21 @@ export default function ClientsCRM() {
                   {client.orders.map((order: any, idx: number) => (
                     <div key={idx} className={`w-full flex items-center justify-between p-3 rounded-xl ${order.color} bg-opacity-70 cursor-pointer hover:opacity-80 transition-opacity`}>
                       <span className="text-dark">Pedido {order.id} - {order.date} - {order.status}</span>
-                      <ChevronRight size={18} className="text-dark/50" />
+                      <div className="flex items-center space-x-2">
+                        {client.phone && (
+                          <a 
+                            href={getWhatsAppLink(client.phone)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1 hover:text-emerald-600 transition-colors"
+                            title="Conversar no WhatsApp"
+                          >
+                            <MessageCircle size={18} />
+                          </a>
+                        )}
+                        <ChevronRight size={18} className="text-dark/50" />
+                      </div>
                     </div>
                   ))}
                 </div>
