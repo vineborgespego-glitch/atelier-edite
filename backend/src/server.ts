@@ -19,6 +19,7 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 
 async function main() {
   try {
+    console.log(`🆔 Process ID: ${process.pid}`);
     // Rotas de Health Check DEFINIDAS ANTES DE TUDO
     app.get('/ping', (req, res) => {
       console.log(`💓 PING received from: ${req.ip}`);
