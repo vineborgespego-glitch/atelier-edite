@@ -5,6 +5,16 @@ import app from './app';
 import { prisma } from './lib/prisma';
 import { runAutoArchive } from './services/autoArchive';
 
+// Capturar erros globais para diagnóstico
+process.on('uncaughtException', (err) => {
+  console.error('💥 UNCAUGHT EXCEPTION:', err.message);
+  console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 UNHANDLED REJECTION at:', promise, 'reason:', reason);
+});
+
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 async function main() {
