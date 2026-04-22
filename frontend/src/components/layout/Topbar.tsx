@@ -1,4 +1,4 @@
-import { Bell, Search, Menu } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 
 interface TopbarProps {
   toggleSidebar: () => void;
@@ -26,10 +26,7 @@ export default function Topbar({ toggleSidebar }: TopbarProps) {
       </div>
 
       <div className="flex items-center space-x-4">
-        <button className="relative p-2 text-mauve hover:text-rosegold transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rosegold rounded-full"></span>
-        </button>
+        {/* Ícone de notificações removido (decorativo) */}
       </div>
     </header>
   );
