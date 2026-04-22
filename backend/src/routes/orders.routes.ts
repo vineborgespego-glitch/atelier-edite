@@ -113,7 +113,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const year = new Date().getFullYear();
     const count = await prisma.order.count({ where: { userId: req.userId } });
-    const orderNumber = `ORD-${year}-${String(count + 1).padStart(4, '0')}`;
+    
+    // Adicionar um sufixo aleatório curto (3 letras) para garantir unicidade mesmo em concorrência
+    const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const orderNumber = `ORD-${year}-${String(count + 1).padStart(4, '0')}-${randomSuffix}`;
 
     const order = await prisma.order.create({
       data: {
@@ -138,9 +141,15 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(201).json({ order, warnings: validation.warnings });
-  } catch (error) {
-    console.error('Create order error:', error);
-    return res.status(500).json({ error: 'Erro ao criar pedido' });
+  } catch (error: any) {
+    console.error('❌ FATAL: Create order error:', error);
+    
+    // Retornar erro detalhado para o frontend poder nos mostrar o que houve
+    return res.status(500).json({ 
+      error: 'Erro interno ao salvar pedido', 
+      details: error.message,
+      code: error.code // Código do Prisma (ex: P2002 para conflito de ID)
+    });
   }
 });
 
