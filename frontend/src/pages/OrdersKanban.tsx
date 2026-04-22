@@ -255,7 +255,7 @@ export default function OrdersKanban() {
 
                   {order.isPaid && (
                     <div className="mb-3 ml-6">
-                      <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-wider">Pago Antecipado</span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-wider">Pago</span>
                     </div>
                   )}
 
