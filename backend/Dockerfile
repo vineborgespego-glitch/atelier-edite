@@ -25,9 +25,9 @@ RUN npm run build
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Railway uses PORT env var (defaults to 80)
+# Railway/Easypanel fallback ports
 ENV PORT=80
-EXPOSE 80
+EXPOSE 80 3000 3001 8080
 
 # Starting command
 CMD ["npm", "start"]

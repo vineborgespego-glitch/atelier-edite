@@ -30,21 +30,40 @@ async function main() {
     console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configurado ✅' : 'Usando padrão inseguro ⚠️'}`);
     console.log(`⏱️ DB Timeouts: ${hasTimeouts ? 'Configurados ✅' : 'Não detectados (Recomendado: connect_timeout=30) ⚠️'}`);
 
-    // FORÇAR PORTA 80 (PADRÃO UNIVERSAL)
-    const FINAL_PORT = 80;
+    // LISTA DE PORTAS PARA TENTAR (PARA CASO O EASYPANEL ESTEJA BUSCANDO A ERRADA)
+    const PORTS = [80, 3000, 3001, 8080];
 
-    app.listen(FINAL_PORT, '0.0.0.0', () => {
-      console.log(`🧵 Atelier Édite API running on port ${FINAL_PORT}`);
-      
-      // Monitorar ping do Health Check de forma simplificada
-      app.get('/ping', (req, res) => {
-        console.log('💓 PING (Health Check) received');
-        res.status(200).send('pong');
-      });
-      
-      app.get('/health', (req, res) => {
-        res.status(200).json({ status: 'ok' });
-      });
+    PORTS.forEach((port) => {
+      try {
+        const server = app.listen(port, '0.0.0.0', () => {
+          console.log(`🧵 Atelier Édite API running on port ${port}`);
+        });
+
+        server.on('error', (err: any) => {
+          if (err.code === 'EADDRINUSE') {
+            console.log(`⚠️ Port ${port} is already in use, skipping...`);
+          } else {
+            console.error(`❌ Error on port ${port}:`, err.message);
+          }
+        });
+      } catch (e: any) {
+        console.log(`⚠️ Could not bind to port ${port}`);
+      }
+    });
+
+    // Monitorar ping do Health Check de forma simplificada em todas as portas
+    app.get('/ping', (req, res) => {
+      console.log(`💓 PING received from: ${req.ip}`);
+      res.status(200).send('pong');
+    });
+    
+    app.get('/health', (req, res) => {
+      res.status(200).json({ status: 'ok' });
+    });
+    
+    app.get('/', (req, res) => {
+      res.status(200).send('🧶 Atelier Édite API is online!');
+    });
 
       // Capturar sinal de desligamento para saber quem matou o processo
       process.on('SIGTERM', () => {
