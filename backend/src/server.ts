@@ -13,9 +13,12 @@ async function main() {
     console.log('✅ Database connected');
 
     const dbHost = process.env.DATABASE_URL?.split('@')[1] || 'URL não definida';
+    const hasTimeouts = process.env.DATABASE_URL?.includes('connect_timeout');
+    
     console.log(`📡 Database Host: ${dbHost.split(':')[0]}`);
     console.log(`🚀 Env: ${process.env.NODE_ENV || 'production'}`);
     console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configurado ✅' : 'Usando padrão inseguro ⚠️'}`);
+    console.log(`⏱️ DB Timeouts: ${hasTimeouts ? 'Configurados ✅' : 'Não detectados (Recomendado: connect_timeout=30) ⚠️'}`);
 
     // GARANTIR QUE RODAMOS NA 8080 QUE ESTÁ NO DOCKERFILE
     const FINAL_PORT = 8080;

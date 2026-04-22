@@ -18,14 +18,21 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Interceptor para tratar 401 Unauthorized
+// Interceptor para tratar erros de resposta
 api.interceptors.response.use((response) => {
   return response;
 }, (error) => {
-  if (error.response?.status === 401) {
+  const status = error.response?.status;
+  const errorCode = error.response?.data?.code;
+
+  // Só deslogamos se for realmente um erro de autenticação (Token inválido ou expirado)
+  // Ignoramos erros 503 (Banco fora) ou códigos de erro de conexão
+  if (status === 401 && errorCode !== 'DB_CONNECTION_ERROR') {
+    console.warn('⚠️ Sessão finalizada: redirecionando para login.');
     localStorage.removeItem('token');
     window.location.href = '/login';
   }
+  
   return Promise.reject(error);
 });
 

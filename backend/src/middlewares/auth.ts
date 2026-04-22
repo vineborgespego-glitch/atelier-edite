@@ -24,14 +24,32 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
     if (!user) {
-      return res.status(401).json({ error: 'Usuário não encontrado' });
+      return res.status(401).json({ 
+        error: 'Sessão inválida', 
+        message: 'Usuário não encontrado no banco de dados',
+        code: 'USER_NOT_FOUND' 
+      });
     }
 
     req.userId = payload.userId;
     req.userRole = payload.role;
     next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Token inválido ou expirado' });
+  } catch (err: any) {
+    console.error('❌ Auth Error:', err.message);
+    
+    // Se for um erro do Prisma (banco de dados), não deslogar o usuário
+    if (err.message?.includes('Prisma') || err.message?.includes('connection') || err.message?.includes('R57P01')) {
+      return res.status(503).json({ 
+        error: 'Serviço Temporariamente Indisponível',
+        message: 'Falha na conexão com o banco de dados. Tente novamente em instantes.',
+        code: 'DB_CONNECTION_ERROR'
+      });
+    }
+
+    return res.status(401).json({ 
+      error: 'Token inválido ou expirado',
+      code: 'INVALID_TOKEN'
+    });
   }
 }
 
