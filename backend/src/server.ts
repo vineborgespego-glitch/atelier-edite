@@ -19,39 +19,7 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 
 async function main() {
   try {
-    await prisma.$connect();
-    console.log('✅ Database connected');
-
-    const dbHost = process.env.DATABASE_URL?.split('@')[1] || 'URL não definida';
-    const hasTimeouts = process.env.DATABASE_URL?.includes('connect_timeout');
-    
-    console.log(`📡 Database Host: ${dbHost.split(':')[0]}`);
-    console.log(`🚀 Env: ${process.env.NODE_ENV || 'production'}`);
-    console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configurado ✅' : 'Usando padrão inseguro ⚠️'}`);
-    console.log(`⏱️ DB Timeouts: ${hasTimeouts ? 'Configurados ✅' : 'Não detectados (Recomendado: connect_timeout=30) ⚠️'}`);
-
-    // LISTA DE PORTAS PARA TENTAR (PARA CASO O EASYPANEL ESTEJA BUSCANDO A ERRADA)
-    const PORTS = [80, 3000, 3001, 8080];
-
-    PORTS.forEach((port) => {
-      try {
-        const server = app.listen(port, '0.0.0.0', () => {
-          console.log(`🧵 Atelier Édite API running on port ${port}`);
-        });
-
-        server.on('error', (err: any) => {
-          if (err.code === 'EADDRINUSE') {
-            console.log(`⚠️ Port ${port} is already in use, skipping...`);
-          } else {
-            console.error(`❌ Error on port ${port}:`, err.message);
-          }
-        });
-      } catch (e: any) {
-        console.log(`⚠️ Could not bind to port ${port}`);
-      }
-    });
-
-    // Monitorar ping do Health Check de forma simplificada em todas as portas
+    // Rotas de Health Check DEFINIDAS ANTES DE TUDO
     app.get('/ping', (req, res) => {
       console.log(`💓 PING received from: ${req.ip}`);
       res.status(200).send('pong');
@@ -62,7 +30,31 @@ async function main() {
     });
     
     app.get('/', (req, res) => {
-      res.status(200).send('🧶 Atelier Édite API is online!');
+      console.log('🧶 Root check received');
+      res.status(200).send('Atelier Édite Online');
+    });
+
+    await prisma.$connect();
+    console.log('✅ Database connected');
+
+    const dbHost = process.env.DATABASE_URL?.split('@')[1] || 'URL não definida';
+    const hasTimeouts = process.env.DATABASE_URL?.includes('connect_timeout');
+    
+    console.log(`📡 Database Host: ${dbHost.split(':')[0]}`);
+    console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configurado ✅' : 'Usando padrão inseguro ⚠️'}`);
+    console.log(`⏱️ DB Timeouts: ${hasTimeouts ? 'Configurados ✅' : 'Não detectados ⚠️'}`);
+
+    // LISTA DE PORTAS PARA TENTAR
+    const PORTS = [80, 3000, 3001, 8080];
+
+    PORTS.forEach((port) => {
+      try {
+        const server = app.listen(port, '0.0.0.0', () => {
+          console.log(`🧵 API LIVE ON PORT ${port}`);
+        });
+
+        server.on('error', () => {}); // Silenciar erros de porta ocupada
+      } catch (e) {}
     });
 
       // Capturar sinal de desligamento para saber quem matou o processo

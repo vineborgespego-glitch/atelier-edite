@@ -29,5 +29,5 @@ RUN mkdir -p uploads
 ENV PORT=80
 EXPOSE 80 3000 3001 8080
 
-# Starting command
-CMD ["npm", "start"]
+# Starting command (Direct node for faster startup and better signal handling)
+CMD ["node", "dist/server.js"]
