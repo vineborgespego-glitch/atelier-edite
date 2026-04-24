@@ -4,9 +4,10 @@ import { LayoutDashboard, Scissors, Users, Settings, ChevronLeft, ChevronRight, 
 interface SidebarProps {
   isOpen: boolean;
   toggle: () => void;
+  isMobile?: boolean;
 }
 
-export default function Sidebar({ isOpen, toggle }: SidebarProps) {
+export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
   const location = useLocation();
 
   const links = [
@@ -18,7 +19,7 @@ export default function Sidebar({ isOpen, toggle }: SidebarProps) {
   ];
 
   return (
-    <aside className="h-full bg-white border-r border-[#F5E6E8] flex flex-col items-center py-6 shadow-sm relative">
+    <aside className={`h-full bg-white border-r border-[#F5E6E8] flex flex-col items-center py-6 shadow-sm relative ${isMobile ? 'border-none' : ''}`}>
       <div className={`flex items-center justify-center w-full mb-10 ${isOpen ? 'px-6' : 'px-2'}`}>
         {isOpen ? (
           <h1 className="font-display font-bold text-2xl text-rosegold tracking-tight">Atelier Édite 🎀</h1>
@@ -37,6 +38,7 @@ export default function Sidebar({ isOpen, toggle }: SidebarProps) {
             <Link
               key={link.to}
               to={link.to}
+              onClick={() => isMobile && toggle()} // Close on click if mobile
               className={`flex items-center py-3 px-3 rounded-xl transition-all duration-200 group
                 ${isActive 
                   ? 'bg-blush/50 text-rosegold font-medium' 
@@ -52,12 +54,14 @@ export default function Sidebar({ isOpen, toggle }: SidebarProps) {
         })}
       </nav>
 
-      <button 
-        onClick={toggle}
-        className="absolute -right-3 top-8 bg-white border border-[#F5E6E8] text-mauve hover:text-rosegold rounded-full p-1 shadow-sm transition-colors"
-      >
-        {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-      </button>
+      {!isMobile && (
+        <button 
+          onClick={toggle}
+          className="absolute -right-3 top-8 bg-white border border-[#F5E6E8] text-mauve hover:text-rosegold rounded-full p-1 shadow-sm transition-colors"
+        >
+          {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+        </button>
+      )}
 
       <div className={`mt-auto w-full px-4 pb-4 flex flex-col ${isOpen ? 'items-start' : 'items-center'}`}>
         <div className={`w-full bg-cream/50 rounded-xl p-3 flex items-center space-x-3 mt-4 ${!isOpen && 'justify-center'}`}>
