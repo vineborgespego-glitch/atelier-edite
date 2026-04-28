@@ -12,7 +12,8 @@ export default function Layout() {
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-dark/40 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-300"
+          className="fixed inset-0 bg-dark/40 backdrop-blur-sm z-40 md:hidden"
+          style={{ animation: 'fadeIn 0.2s ease' }}
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

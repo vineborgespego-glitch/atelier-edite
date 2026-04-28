@@ -87,3 +87,8 @@
     border-bottom: 1px solid #F5E6E8;
   }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
