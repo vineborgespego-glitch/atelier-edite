@@ -33,6 +33,7 @@ app.use(morgan('dev'));
 // CORS configuration
 const allowedOrigins = [
   'https://atelier.d3tech.com.br',
+  'https://atelier.72.60.12.248.sslip.io',
   'https://atelier-edite.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
@@ -40,7 +41,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('d3tech.com.br')) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('d3tech.com.br') ||
+      origin.endsWith('.sslip.io')
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
