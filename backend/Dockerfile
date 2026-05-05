@@ -22,8 +22,8 @@ RUN npx prisma generate
 # Build TypeScript
 RUN npm run build
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create uploads directory with write permissions
+RUN mkdir -p uploads && chmod 777 uploads
 
 # Railway/Easypanel fallback ports
 ENV PORT=80

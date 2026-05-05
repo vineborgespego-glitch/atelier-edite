@@ -46,7 +46,7 @@ export default function OrdersKanban() {
       setPreviewUrl(objectUrl);
     } catch (error: any) {
       console.error('Error generating receipt:', error);
-      alert(`Erro ao gerar recibo: ${error.response?.data?.error || error.message}`);
+      alert(`Erro ao gerar recibo: ${error.response?.data?.details || error.response?.data?.error || error.message}`);
     } finally {
       setGeneratingId(null);
     }

@@ -73,9 +73,13 @@ router.post('/:orderId/generate', async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(201).json({ receipt, url: pdfPath });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Receipt generation error:', error);
-    return res.status(500).json({ error: 'Erro ao gerar recibo. Verifique os dados do pedido.' });
+    return res.status(500).json({ 
+      error: 'Erro ao gerar recibo.', 
+      details: error?.message || 'Erro desconhecido',
+      code: error?.code,
+    });
   }
 });
 
