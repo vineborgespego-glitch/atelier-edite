@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Check, Calendar, Plus, Trash2, User, Phone, X } from 'lucide-react';
@@ -140,7 +140,14 @@ export default function OrderForm() {
     }
   };
 
-  const total = items.reduce((acc, curr) => acc + (Number(String(curr.unitPrice).replace(',', '.')) || 0) * (Number(curr.quantity) || 1), 0);
+  const total = useMemo(() => {
+    return items.reduce((acc, item) => {
+      const priceStr = String(item.unitPrice).replace(',', '.');
+      const price = parseFloat(priceStr) || 0;
+      const qty = parseFloat(String(item.quantity)) || 0;
+      return acc + (price * qty);
+    }, 0);
+  }, [items]);
 
   return (
     <div className="max-w-md mx-auto min-h-[calc(100vh-8rem)] flex flex-col items-center pt-8 pb-12">
