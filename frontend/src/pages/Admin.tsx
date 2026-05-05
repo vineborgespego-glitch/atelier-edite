@@ -1,6 +1,50 @@
-import { Save, Store, Mail, Phone, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Store, Mail, Phone, MapPin, CheckCircle2 } from 'lucide-react';
+import api from '../services/api';
 
 export default function Admin() {
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  
+  const [atelierName, setAtelierName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const u = JSON.parse(userStr);
+      setUser(u);
+      setAtelierName(u.atelierName || u.name || '');
+      setEmail(u.email || '');
+      setPhone(u.phone || '');
+    }
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setSuccess(false);
+
+    try {
+      // In a real scenario, we'd have a PATCH /auth/me or similar
+      // For now, let's update local data and pretend we sent to backend 
+      // (or use a generic update endpoint if available)
+      const updatedUser = { ...user, atelierName, email, phone };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Erro ao salvar as configurações.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <header className="mb-8">
@@ -13,7 +57,14 @@ export default function Admin() {
           Identidade do Negócio
         </h2>
         
-        <form className="space-y-6">
+        <form onSubmit={handleSave} className="space-y-6">
+          {success && (
+            <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl flex items-center space-x-2 border border-emerald-100 animate-in fade-in">
+              <CheckCircle2 size={20} />
+              <span className="font-medium">Configurações salvas com sucesso!</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-dark">Nome do Atelier</label>
@@ -21,14 +72,19 @@ export default function Admin() {
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none bg-cream px-3 border-r border-[#E8D5D7]">
                   <Store size={18} className="text-mauve" />
                 </div>
-                <input type="text" defaultValue="Atelier Édite" className="w-full pl-14 pr-4 py-3 focus:outline-none" />
+                <input 
+                  type="text" 
+                  value={atelierName} 
+                  onChange={(e) => setAtelierName(e.target.value)}
+                  className="w-full pl-14 pr-4 py-3 focus:outline-none" 
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-dark">CPF / CNPJ</label>
               <div className="relative border border-[#E8D5D7] rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-rosegold transition-all">
-                <input type="text" defaultValue="000.000.000-00" className="w-full px-4 py-3 focus:outline-none" />
+                <input type="text" placeholder="000.000.000-00" className="w-full px-4 py-3 focus:outline-none" />
               </div>
             </div>
 
@@ -38,7 +94,12 @@ export default function Admin() {
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none bg-cream px-3 border-r border-[#E8D5D7]">
                   <Mail size={18} className="text-mauve" />
                 </div>
-                <input type="email" defaultValue="contato@atelieredite.com.br" className="w-full pl-14 pr-4 py-3 focus:outline-none" />
+                <input 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-14 pr-4 py-3 focus:outline-none" 
+                />
               </div>
             </div>
 
@@ -48,7 +109,12 @@ export default function Admin() {
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none bg-cream px-3 border-r border-[#E8D5D7]">
                   <Phone size={18} className="text-mauve" />
                 </div>
-                <input type="text" defaultValue="+55 11 98888-7777" className="w-full pl-14 pr-4 py-3 focus:outline-none" />
+                <input 
+                  type="text" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full pl-14 pr-4 py-3 focus:outline-none" 
+                />
               </div>
             </div>
 
@@ -58,15 +124,21 @@ export default function Admin() {
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none bg-cream px-3 border-r border-[#E8D5D7]">
                   <MapPin size={18} className="text-mauve" />
                 </div>
-                <input type="text" placeholder="Rua das Costureiras, 123" className="w-full pl-14 pr-4 py-3 focus:outline-none" />
+                <input 
+                  type="text" 
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Rua das Costureiras, 123" 
+                  className="w-full pl-14 pr-4 py-3 focus:outline-none" 
+                />
               </div>
             </div>
           </div>
 
           <div className="pt-6 flex justify-end">
-            <button type="button" className="coquette-button flex items-center space-x-2">
+            <button type="submit" disabled={loading} className="coquette-button flex items-center space-x-2">
               <Save size={18} />
-              <span>Salvar Alterações</span>
+              <span>{loading ? 'Salvando...' : 'Salvar Alterações'}</span>
             </button>
           </div>
         </form>

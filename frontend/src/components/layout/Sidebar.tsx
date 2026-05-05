@@ -18,11 +18,20 @@ export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
     { to: '/app/admin', label: 'Ajustes', icon: Settings },
   ];
 
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const rawName = user?.atelierName || user?.name || 'Édite';
+  
+  // "Lock" logic: don't double the word "Atelier"
+  const displayName = rawName.toLowerCase().startsWith('atelier') 
+    ? rawName 
+    : `Atelier ${rawName}`;
+
   return (
     <aside className={`h-full bg-white border-r border-[#F5E6E8] flex flex-col items-center py-6 shadow-sm relative ${isMobile ? 'border-none' : ''}`}>
       <div className={`flex items-center justify-center w-full mb-10 ${isOpen ? 'px-6' : 'px-2'}`}>
         {isOpen ? (
-          <h1 className="font-display font-bold text-2xl text-rosegold tracking-tight">Atelier Édite 🎀</h1>
+          <h1 className="font-display font-bold text-2xl text-rosegold tracking-tight capitalize">{displayName} 🎀</h1>
         ) : (
           <div className="w-10 h-10 rounded-full bg-blush flex items-center justify-center text-rosegold font-display font-bold text-xl">
             AÉ
