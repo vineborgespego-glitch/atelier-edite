@@ -19,10 +19,11 @@ router.post('/:orderId/generate', async (req: AuthRequest, res: Response) => {
 
     if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
 
-    // Generate unique receipt number
+    // Generate unique receipt number with random suffix to avoid conflicts
     const year = new Date().getFullYear();
     const count = await prisma.receipt.count({ where: { userId: req.userId } });
-    const receiptNumber = `REC-${year}-${String(count + 1).padStart(5, '0')}`;
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const receiptNumber = `REC-${year}-${String(count + 1).padStart(5, '0')}-${randomSuffix}`;
 
     // Create PDF File
     const pdfPath = await generateReceiptPDF(order, receiptNumber);
