@@ -105,13 +105,15 @@ export default function OrdersKanban() {
 
     return {
       id: o.id,
-      number: `ORD-${new Date(o.createdAt).getFullYear()}-${String(o.id).padStart(3, '0')}`,
+      number: o.orderNumber?.split('-').pop() || '0000',
       client: o.client.name,
       title: o.items[0]?.description || 'Serviços Diversos',
       qty: o.items.reduce((acc: number, curr: any) => acc + curr.quantity, 0),
       status: visualStatus,
       progress,
       isPaid: o.paidAt !== null,
+      amount: o.totalAmount,
+      dueDate: o.dueDate ? new Date(o.dueDate).toLocaleDateString('pt-BR') : 'A definir',
     };
   };
 
@@ -246,12 +248,23 @@ export default function OrdersKanban() {
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center space-x-2">
                       <GripVertical size={16} className="text-mauve/30 group-hover:text-mauve/60 transition-colors flex-shrink-0" />
-                      <h4 className="font-medium text-dark">Pedido {order.number}</h4>
+                      <h4 className="font-display font-bold text-dark text-lg">{order.client}</h4>
                     </div>
-                    <span className="text-rosegold">🎀</span>
+                    <span className="text-rosegold text-xl">🎀</span>
                   </div>
-                  <p className="text-sm text-mauve mb-1 ml-6">{order.client}</p>
-                  <p className="text-sm text-dark mb-2 ml-6">{order.title}, Qtd: {order.qty}</p>
+
+                  <div className="ml-6 space-y-1 mb-3">
+                    <p className="text-sm font-bold text-rosegold">
+                      Total: R$ {Number(order.amount).toFixed(2).replace('.', ',')}
+                    </p>
+                    <p className="text-xs text-mauve flex items-center">
+                      <Calendar size={12} className="mr-1" />
+                      Entrega: {order.dueDate}
+                    </p>
+                    <p className="text-[10px] text-mauve/60 italic line-clamp-1">
+                      {order.title}
+                    </p>
+                  </div>
 
                   {order.isPaid && (
                     <div className="mb-3 ml-6">
