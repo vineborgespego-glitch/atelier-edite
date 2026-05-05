@@ -62,8 +62,16 @@ export async function generateReceiptPDF(
       order.items.forEach(item => {
         const qty = Number(item.quantity);
         const subtotal = Number(item.subtotal).toFixed(2).replace('.', ',');
-        doc.text(`${qty}x ${item.description.slice(0, 18)}`, { continued: true });
-        doc.text(` R$ ${subtotal}`, { align: 'right' });
+        const currentY = doc.y;
+        
+        // Print quantity and description with wrapping, leaving space for price on the right
+        doc.text(`${qty}x ${item.description}`, { width: 140 });
+        
+        // Print subtotal right-aligned at the same starting Y
+        doc.text(`R$ ${subtotal}`, 15, currentY, { align: 'right', width: 197 });
+        
+        // Ensure next item starts below both description and price
+        doc.moveDown(0.5);
       });
       doc.moveDown(0.5);
       doc.text('----------------------------------');
