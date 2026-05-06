@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Save, Store, Mail, Phone, MapPin, CheckCircle2 } from 'lucide-react';
+import { Save, Store, Mail, Phone, MapPin, CheckCircle2, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -29,9 +31,6 @@ export default function Admin() {
     setSuccess(false);
 
     try {
-      // In a real scenario, we'd have a PATCH /auth/me or similar
-      // For now, let's update local data and pretend we sent to backend 
-      // (or use a generic update endpoint if available)
       const updatedUser = { ...user, atelierName, email, phone };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
@@ -45,8 +44,16 @@ export default function Admin() {
     }
   };
 
+  const handleLogout = () => {
+    if (window.confirm('Tem certeza que deseja sair?')) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/');
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <header className="mb-8">
         <h1 className="text-3xl font-display font-bold text-dark">Configurações do Atelier</h1>
         <p className="text-mauve mt-1">Personalize os dados que aparecerão nos recibos e comunicações.</p>
@@ -142,6 +149,25 @@ export default function Admin() {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="coquette-card p-8 border-red-100 bg-red-50/10">
+        <h2 className="text-xl font-display font-semibold text-red-700 mb-6 border-b border-red-100 pb-4">
+          Conta e Acesso
+        </h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-dark font-medium">Encerrar Sessão</p>
+            <p className="text-sm text-mauve">Saia da sua conta com segurança.</p>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center space-x-2 px-6 py-3 rounded-xl border-2 border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all font-bold"
+          >
+            <LogOut size={18} />
+            <span>Sair do Sistema</span>
+          </button>
+        </div>
       </div>
     </div>
   );
