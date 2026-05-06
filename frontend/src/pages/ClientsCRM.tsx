@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Search, ChevronRight, ChevronDown, MessageCircle } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, MessageCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const getWhatsAppLink = (phone: string) => {
@@ -55,7 +55,19 @@ export default function ClientsCRM() {
     loadClients();
   }, []);
 
-  const toggleExpand = (id: number) => {
+  const handleDeleteClient = async (id: string) => {
+    if (!window.confirm('TEM CERTEZA? Isso excluirá o cliente e TODOS os seus pedidos permanentemente. Esta ação não pode ser desfeita!')) return;
+    
+    try {
+      await api.delete(`/clients/${id}`);
+      setClients(clients.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      alert('Não foi possível excluir o cliente. Verifique se há pedidos ativos que impedem a exclusão ou tente novamente.');
+    }
+  };
+
+  const toggleExpand = (id: string) => {
     setClients(clients.map(c => c.id === id ? { ...c, expanded: !c.expanded } : c));
   };
 
@@ -109,6 +121,14 @@ export default function ClientsCRM() {
               </div>
 
               <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => handleDeleteClient(client.id)}
+                  className="p-2 bg-red-50 text-red-400 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                  title="Excluir Cliente Permanentemente"
+                >
+                  <Trash2 size={20} />
+                </button>
+
                 {client.phone && (
                   <a 
                     href={getWhatsAppLink(client.phone)} 
