@@ -113,7 +113,13 @@ export default function OrdersKanban() {
       progress,
       isPaid: o.paidAt !== null,
       amount: o.totalAmount,
-      dueDate: o.dueDate ? new Date(o.dueDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'A definir',
+      dueDate: (() => {
+        if (!o.dueDate) return 'A definir';
+        // Directly slice the ISO string (e.g. "2026-05-15T00:00:00.000Z" → "2026-05-15")
+        // This avoids ALL timezone conversion issues
+        const [year, month, day] = o.dueDate.substring(0, 10).split('-');
+        return `${day}/${month}/${year}`;
+      })(),
     };
   };
 
