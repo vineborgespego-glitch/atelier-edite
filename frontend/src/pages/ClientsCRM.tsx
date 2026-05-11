@@ -71,10 +71,14 @@ export default function ClientsCRM() {
     setClients(clients.map(c => c.id === id ? { ...c, expanded: !c.expanded } : c));
   };
 
-  const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (c.phone && c.phone.replace(/\D/g, '').includes(searchTerm.replace(/\D/g, '')))
-  );
+  const filteredClients = clients.filter(c => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    const nameMatch = c.name.toLowerCase().includes(term);
+    const phoneDigits = term.replace(/\D/g, '');
+    const phoneMatch = phoneDigits.length >= 3 && c.phone && c.phone.replace(/\D/g, '').includes(phoneDigits);
+    return nameMatch || phoneMatch;
+  });
 
   return (
     <div className="max-w-4xl mx-auto">
