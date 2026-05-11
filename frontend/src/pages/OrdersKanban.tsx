@@ -113,7 +113,7 @@ export default function OrdersKanban() {
       progress,
       isPaid: o.paidAt !== null,
       amount: o.totalAmount,
-      dueDate: o.dueDate ? new Date(o.dueDate).toLocaleDateString('pt-BR') : 'A definir',
+      dueDate: o.dueDate ? new Date(o.dueDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'A definir',
     };
   };
 
