@@ -62,6 +62,22 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
 
   try {
+    // Duplicate check by phone (cleaning numbers for comparison)
+    if (phone) {
+      const cleanedInput = phone.replace(/\D/g, '');
+      const existingClients = await prisma.client.findMany({
+        where: { userId: req.userId! }
+      });
+
+      const duplicate = existingClients.find(c => 
+        c.phone && c.phone.replace(/\D/g, '') === cleanedInput
+      );
+
+      if (duplicate) {
+        return res.status(400).json({ error: `Cliente já cadastrado com este número: ${duplicate.name}` });
+      }
+    }
+
     const client = await prisma.client.create({
       data: {
         userId: req.userId!,

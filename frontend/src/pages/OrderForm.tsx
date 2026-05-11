@@ -54,17 +54,32 @@ export default function OrderForm() {
     }
 
     const cleaned = clientPhone.replace(/\D/g, '');
+    const nameMatch = clients.find(c => 
+      c.name.toLowerCase().trim() === clientName.toLowerCase().trim()
+    );
+
     if (cleaned.length >= 8) {
-      const duplicate = clients.find(c => 
+      const phoneMatch = clients.find(c => 
         c.phone?.replace(/\D/g, '') === cleaned
       );
-      setIsDuplicate(!!duplicate);
-      setDuplicateName(duplicate ? duplicate.name : '');
+      
+      if (phoneMatch) {
+        setIsDuplicate(true);
+        setDuplicateName(phoneMatch.name);
+        return;
+      }
+    }
+
+    if (nameMatch) {
+      // It's a name match but not necessarily a phone match yet
+      setIsDuplicate(false); // We don't block by name, only warn
+      setDuplicateName(nameMatch.name);
+      // I'll add a new state for name duplicate warning
     } else {
       setIsDuplicate(false);
       setDuplicateName('');
     }
-  }, [clientPhone, clients, isNewClient]);
+  }, [clientPhone, clientName, clients, isNewClient]);
 
   const addItem = () => {
     setItems([...items, { description: '', quantity: 1, unitPrice: '' }]);
@@ -288,8 +303,14 @@ export default function OrderForm() {
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ex: Maria da Silva"
                     required={isNewClient}
-                    className="w-full bg-transparent p-4 pl-12 pr-12 text-dark placeholder:text-mauve/60 focus:outline-none"
+                    className={`w-full bg-transparent p-4 pl-12 pr-12 text-dark placeholder:text-mauve/60 focus:outline-none transition-all ${duplicateName && !isDuplicate ? 'bg-amber-50/50' : ''}`}
                   />
+                  {duplicateName && !isDuplicate && (
+                    <p className="absolute -bottom-5 left-2 text-[9px] text-amber-200 animate-pulse">
+                      Já existe uma cliente com este nome.
+                    </p>
+                  )}
+                </div>
                 </div>
               </div>
                <div className="space-y-2">
