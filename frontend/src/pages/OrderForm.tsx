@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { Check, Calendar, Plus, Trash2, User, Phone, X } from 'lucide-react';
+import { Check, Calendar, Plus, Trash2, User, Phone, X, AlertCircle } from 'lucide-react';
 
 export default function OrderForm() {
   const navigate = useNavigate();
@@ -12,6 +12,8 @@ export default function OrderForm() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
+  const [isDuplicate, setIsDuplicate] = useState(false);
+  const [duplicateName, setDuplicateName] = useState('');
   const [deadline, setDeadline] = useState('');
   const [isPaid, setIsPaid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -44,6 +46,26 @@ export default function OrderForm() {
     fetchClients();
   }, []);
 
+  useEffect(() => {
+    if (!isNewClient) {
+      setIsDuplicate(false);
+      setDuplicateName('');
+      return;
+    }
+
+    const cleaned = clientPhone.replace(/\D/g, '');
+    if (cleaned.length >= 8) {
+      const duplicate = clients.find(c => 
+        c.phone?.replace(/\D/g, '') === cleaned
+      );
+      setIsDuplicate(!!duplicate);
+      setDuplicateName(duplicate ? duplicate.name : '');
+    } else {
+      setIsDuplicate(false);
+      setDuplicateName('');
+    }
+  }, [clientPhone, clients, isNewClient]);
+
   const addItem = () => {
     setItems([...items, { description: '', quantity: 1, unitPrice: '' }]);
   };
@@ -62,6 +84,10 @@ export default function OrderForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isNewClient && isDuplicate) {
+      alert(`Não é possível cadastrar: este número já pertence a ${duplicateName}.`);
+      return;
+    }
     setLoading(true);
     setError('');
 
@@ -266,10 +292,10 @@ export default function OrderForm() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <label className="text-white/90 text-sm ml-2 font-medium">WhatsApp / Telefone</label>
-                <div className="relative flex items-center bg-white/90 backdrop-blur-md rounded-2xl border border-white/60 focus-within:ring-4 focus-within:ring-white/30">
-                  <Phone className="absolute left-4 text-mauve" size={20} />
+                <div className={`relative flex items-center bg-white/90 backdrop-blur-md rounded-2xl border transition-all ${isDuplicate ? 'border-red-500 ring-4 ring-red-500/20' : 'border-white/60 focus-within:ring-4 focus-within:ring-white/30'}`}>
+                  <Phone className={`absolute left-4 ${isDuplicate ? 'text-red-500' : 'text-mauve'}`} size={20} />
                   <input 
                     type="tel" 
                     value={clientPhone}
@@ -278,7 +304,13 @@ export default function OrderForm() {
                     required={isNewClient}
                     className="w-full bg-transparent p-4 pl-12 pr-12 text-dark placeholder:text-mauve/60 focus:outline-none"
                   />
+                  {isDuplicate && <AlertCircle className="absolute right-4 text-red-500 animate-pulse" size={20} />}
                 </div>
+                {isDuplicate && (
+                  <p className="text-[10px] text-white bg-red-500/40 px-2 py-1 rounded-lg animate-in fade-in">
+                    Este número já pertence a <strong>{duplicateName}</strong>
+                  </p>
+                )}
               </div>
             </div>
           )}
