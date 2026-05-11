@@ -303,7 +303,7 @@ export default function OrderForm() {
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ex: Maria da Silva"
                     required={isNewClient}
-                    className={`w-full bg-transparent p-4 pl-12 pr-12 text-dark placeholder:text-mauve/60 focus:outline-none transition-all ${duplicateName && !isDuplicate ? 'bg-amber-50/50' : ''}`}
+                    className="w-full bg-transparent p-4 pl-12 pr-12 text-dark placeholder:text-mauve/60 focus:outline-none"
                   />
                   {duplicateName && !isDuplicate && (
                     <p className="absolute -bottom-5 left-2 text-[9px] text-amber-200 animate-pulse">
@@ -311,9 +311,9 @@ export default function OrderForm() {
                     </p>
                   )}
                 </div>
-                </div>
               </div>
-               <div className="space-y-2">
+
+              <div className="space-y-2">
                 <label className="text-white/90 text-sm ml-2 font-medium">WhatsApp / Telefone</label>
                 <div className={`relative flex items-center bg-white/90 backdrop-blur-md rounded-2xl border transition-all ${isDuplicate ? 'border-red-500 ring-4 ring-red-500/20' : 'border-white/60 focus-within:ring-4 focus-within:ring-white/30'}`}>
                   <Phone className={`absolute left-4 ${isDuplicate ? 'text-red-500' : 'text-mauve'}`} size={20} />
