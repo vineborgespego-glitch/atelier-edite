@@ -192,6 +192,58 @@ router.patch('/:id/pay', async (req: AuthRequest, res: Response) => {
   return res.json({ order });
 });
 
+// PUT /api/orders/:id — Update order details (items, due date, notes)
+router.put('/:id', async (req: AuthRequest, res: Response) => {
+  const { dueDate, items, notes } = req.body;
+
+  const existing = await prisma.order.findFirst({
+    where: { id: req.params.id, userId: req.userId },
+  });
+  if (!existing) return res.status(404).json({ error: 'Pedido não encontrado' });
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Faltando: Itens do Serviço' });
+  }
+
+  let calculatedTotal = 0;
+  const processedItems = items.map((item: any) => {
+    const qty = Number(item.quantity || 1);
+    const price = Number(item.unitPrice || 0);
+    const subtotal = qty * price;
+    calculatedTotal += subtotal;
+    return {
+      description: item.description,
+      quantity: new Prisma.Decimal(qty),
+      unitPrice: new Prisma.Decimal(price),
+      subtotal: new Prisma.Decimal(subtotal),
+    };
+  });
+
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      // Delete old items first
+      await tx.orderItem.deleteMany({ where: { orderId: req.params.id } });
+      // Update order with new data
+      return tx.order.update({
+        where: { id: req.params.id },
+        data: {
+          dueDate: dueDate ? new Date(dueDate) : existing.dueDate,
+          notes: notes ?? existing.notes,
+          title: items[0]?.description || existing.title,
+          totalAmount: new Prisma.Decimal(calculatedTotal),
+          items: { create: processedItems },
+        },
+        include: { items: true, client: { select: { id: true, name: true } } },
+      });
+    });
+
+    return res.json({ order });
+  } catch (error: any) {
+    console.error('Update order error:', error);
+    return res.status(500).json({ error: 'Erro ao atualizar pedido', details: error.message });
+  }
+});
+
 // DELETE /api/orders/:id
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   const existing = await prisma.order.findFirst({

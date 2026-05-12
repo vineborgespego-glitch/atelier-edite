@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar } from 'lucide-react';
+import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Visual → Backend status map
@@ -333,6 +333,15 @@ export default function OrdersKanban() {
                         <Printer size={12} />
                       )}
                       <span>Recibo</span>
+                    </button>
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/app/orders/${order.id}/edit`); }}
+                      className="flex items-center space-x-1 text-[10px] text-blue-400 hover:text-blue-600 transition-colors font-medium rounded-md px-1 py-1"
+                      title="Editar pedido"
+                    >
+                      <Pencil size={12} />
+                      <span>Editar</span>
                     </button>
                   </div>
                 </div>

@@ -7,6 +7,7 @@ import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
 import OrdersKanban from './pages/OrdersKanban';
 import OrderForm from './pages/OrderForm';
+import OrderEdit from './pages/OrderEdit';
 import OrderHistory from './pages/OrderHistory';
 import ClientsCRM from './pages/ClientsCRM';
 import ClientForm from './pages/ClientForm';
@@ -41,6 +42,7 @@ function App() {
           <Route path="orders">
             <Route index element={<OrdersKanban />} />
             <Route path="new" element={<OrderForm />} />
+            <Route path=":id/edit" element={<OrderEdit />} />
             <Route path="history" element={<OrderHistory />} />
           </Route>
           
