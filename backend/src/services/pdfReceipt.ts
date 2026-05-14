@@ -101,6 +101,15 @@ export async function generateReceiptPDF(
         doc.moveDown(1);
       }
 
+      // --- OBSERVAÇÕES ---
+      if (order.notes) {
+        doc.fillColor('#000000');
+        doc.fontSize(11).font('Courier-Bold').text('OBSERVAÇÕES:', { underline: true });
+        doc.moveDown(0.3);
+        doc.fontSize(10).font('Courier-Bold').text(order.notes, { align: 'left', width: 187 });
+        doc.moveDown(1.5);
+      }
+
       // --- PICKUP BOX ---
       const pickupY = doc.y;
       doc.rect(20, pickupY, 187, 40).stroke();

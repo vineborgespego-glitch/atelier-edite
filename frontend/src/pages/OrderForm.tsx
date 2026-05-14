@@ -18,6 +18,7 @@ export default function OrderForm() {
   const [isPaid, setIsPaid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [cardType, setCardType] = useState('');
+  const [notes, setNotes] = useState('');
   const [items, setItems] = useState([{ description: '', quantity: 1, unitPrice: '' }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -170,7 +171,8 @@ export default function OrderForm() {
         items: formattedItems,
         dueDate: new Date(deadline).toISOString(),
         isPaid,
-        paymentMethod: finalPaymentMethod
+        paymentMethod: finalPaymentMethod,
+        notes
       });
       
       navigate('/app/orders');
@@ -346,6 +348,19 @@ export default function OrderForm() {
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
                 className="w-full bg-transparent p-4 pl-12 pr-12 text-dark placeholder:text-mauve/60 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-white/90 text-sm ml-2 font-medium">Observações (opcional)</label>
+            <div className="relative flex items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.3)] border border-white/60 focus-within:ring-4 focus-within:ring-white/30">
+              <textarea 
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex: as calças vierão marcadas..."
+                className="w-full bg-transparent p-4 text-dark placeholder:text-mauve/60 focus:outline-none resize-none rounded-2xl"
               />
             </div>
           </div>

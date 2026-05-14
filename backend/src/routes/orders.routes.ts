@@ -57,7 +57,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 
 // POST /api/orders
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { clientId, title, description, dueDate, discount = 0, isPaid = false, paymentMethod, items } = req.body;
+  const { clientId, title, description, dueDate, discount = 0, isPaid = false, paymentMethod, items, notes } = req.body;
 
   // Debug log for production diagnostics
   console.log('Order Creation Request:', {
@@ -132,6 +132,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         totalAmount: new Prisma.Decimal(finalAmount),
         deposit: isPaid ? new Prisma.Decimal(finalAmount) : new Prisma.Decimal(0),
         discount: new Prisma.Decimal(discount),
+        notes: notes || null,
         validationResult: validation as any,
         items: {
           create: processedItems
