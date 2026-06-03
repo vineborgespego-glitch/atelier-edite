@@ -3,6 +3,7 @@ import api from '../services/api';
 import { Search, Archive, Calendar, User, Package, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { X, CheckSquare, DollarSign } from 'lucide-react';
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -10,6 +11,7 @@ export default function OrderHistory() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
   useEffect(() => {
     loadArchivedOrders();
@@ -100,7 +102,7 @@ export default function OrderHistory() {
                       R$ {Number(order.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                     <button 
-                      onClick={() => {/* Ver Detalhes */}}
+                      onClick={() => setSelectedOrder(order)}
                       className="text-xs text-mauve hover:text-rosegold font-bold uppercase tracking-wider"
                     >
                       Ver Detalhes
@@ -129,6 +131,88 @@ export default function OrderHistory() {
               >
                 <ChevronRight size={20} />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes do Pedido */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <header className="p-6 border-b border-[#F5E6E8] flex items-center justify-between bg-cream/30">
+              <div>
+                <h2 className="text-xl font-display font-bold text-dark">{selectedOrder.title}</h2>
+                <p className="text-sm text-mauve mt-1">Pedido <span className="uppercase">{selectedOrder.orderNumber}</span> • {selectedOrder.client.name}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedOrder(null)}
+                className="p-2 text-mauve hover:text-rosegold bg-white hover:bg-[#F5E6E8] rounded-xl transition-colors shadow-sm"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+              {/* Informações Básicas */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-[#F5E6E8] shadow-sm">
+                  <div className="text-xs font-bold text-mauve uppercase tracking-wider mb-1">Data de Criação</div>
+                  <div className="text-dark font-medium">{format(new Date(selectedOrder.createdAt), "dd/MM/yyyy", { locale: ptBR })}</div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-[#F5E6E8] shadow-sm">
+                  <div className="text-xs font-bold text-mauve uppercase tracking-wider mb-1">Status de Pagamento</div>
+                  <div className="text-dark font-medium flex items-center gap-2">
+                    {selectedOrder.paidAt ? (
+                      <span className="flex items-center text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-sm"><CheckSquare size={14} className="mr-1" /> Pago</span>
+                    ) : (
+                      <span className="flex items-center text-orange-600 bg-orange-50 px-2 py-1 rounded-md text-sm">Pendente</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {selectedOrder.notes && (
+                <div className="bg-white p-4 rounded-2xl border border-[#F5E6E8] shadow-sm">
+                  <div className="text-xs font-bold text-mauve uppercase tracking-wider mb-2">Observações</div>
+                  <p className="text-dark text-sm whitespace-pre-wrap">{selectedOrder.notes}</p>
+                </div>
+              )}
+
+              {/* Lista de Itens */}
+              <div>
+                <h3 className="text-sm font-bold text-dark mb-3 uppercase tracking-wider">Itens do Serviço</h3>
+                <div className="bg-white rounded-2xl border border-[#F5E6E8] shadow-sm overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead className="bg-[#FEF2ED]/50 border-b border-[#F5E6E8]">
+                      <tr>
+                        <th className="p-3 text-xs font-bold text-mauve uppercase tracking-wider">Descrição</th>
+                        <th className="p-3 text-xs font-bold text-mauve uppercase tracking-wider text-center">Qtd</th>
+                        <th className="p-3 text-xs font-bold text-mauve uppercase tracking-wider text-right">Valor Un.</th>
+                        <th className="p-3 text-xs font-bold text-mauve uppercase tracking-wider text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F5E6E8]">
+                      {selectedOrder.items?.map((item: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="p-3 text-sm text-dark">{item.description}</td>
+                          <td className="p-3 text-sm text-dark text-center">{Number(item.quantity)}</td>
+                          <td className="p-3 text-sm text-mauve text-right">R$ {Number(item.unitPrice).toFixed(2).replace('.', ',')}</td>
+                          <td className="p-3 text-sm font-medium text-dark text-right">R$ {Number(item.subtotal).toFixed(2).replace('.', ',')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-[#FEF2ED]/30">
+                      <tr>
+                        <td colSpan={3} className="p-4 text-right font-bold text-dark">TOTAL DO PEDIDO:</td>
+                        <td className="p-4 text-right font-bold text-rosegold text-lg">
+                          R$ {Number(selectedOrder.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>
