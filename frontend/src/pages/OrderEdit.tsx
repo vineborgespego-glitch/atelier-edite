@@ -89,6 +89,19 @@ export default function OrderEdit() {
     }
   };
 
+  const handleDelete = async () => {
+    if (window.confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) {
+      try {
+        setSaving(true);
+        await api.delete(`/orders/${id}`);
+        navigate('/app/orders');
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Erro ao excluir o pedido.');
+        setSaving(false);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
@@ -107,7 +120,16 @@ export default function OrderEdit() {
       </div>
 
       <div className="w-full bg-gradient-to-b from-[#B5777B]/80 to-[#9B7E8A]/90 p-8 rounded-[2rem] shadow-xl relative overflow-hidden backdrop-blur-sm border border-white/20">
-        <div className="absolute top-4 right-4 text-white/50 text-2xl rotate-12">🎀</div>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={saving}
+          className="absolute top-5 right-14 text-white/50 hover:text-red-400 hover:bg-white/10 rounded-full p-2 transition-all z-10"
+          title="Excluir Pedido"
+        >
+          <Trash2 size={20} />
+        </button>
+        <div className="absolute top-4 right-4 text-white/50 text-2xl rotate-12 pointer-events-none">🎀</div>
 
         <h2 className="text-xl font-display italic text-white text-center mb-2 drop-shadow-md">
           {clientName}
