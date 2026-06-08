@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar, Pencil, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Visual → Backend status map
 const VISUAL_TO_BACKEND: Record<string, string> = {
@@ -13,6 +13,7 @@ const VISUAL_TO_BACKEND: Record<string, string> = {
 
 export default function OrdersKanban() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = useState<any[]>([]);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -146,6 +147,14 @@ export default function OrdersKanban() {
     }
     loadOrders();
   }, []);
+
+  // Check if we should automatically open a receipt
+  useEffect(() => {
+    if (location.state?.openReceiptFor) {
+      handleGenerateReceipt(location.state.openReceiptFor);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   // ── Drag handlers ──────────────────────────────────────────────────────────
   const onDragStart = (orderId: string) => {

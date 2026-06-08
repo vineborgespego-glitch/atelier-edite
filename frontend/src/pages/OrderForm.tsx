@@ -164,7 +164,7 @@ export default function OrderForm() {
       console.log('Formatted Items:', formattedItems);
 
       // Cria pedido
-      await api.post('/orders', {
+      const response = await api.post('/orders', {
         clientId: finalClientId,
         title: formattedItems[0]?.description || 'Serviço de Costura',
         description: `Entregar até ${deadline}`,
@@ -175,7 +175,7 @@ export default function OrderForm() {
         notes
       });
       
-      navigate('/app/orders');
+      navigate('/app/orders', { state: { openReceiptFor: response.data.order.id } });
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao registrar. Verifique os dados.');
     } finally {
