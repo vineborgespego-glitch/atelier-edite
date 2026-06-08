@@ -32,10 +32,16 @@ export default function OrdersKanban() {
 
   const handleGenerateReceipt = async (orderId: string) => {
     setGeneratingId(orderId);
-    // Store the order details for use in the WhatsApp button
-    const orderData = orders.find(o => o.id === orderId) || null;
-    setCurrentReceiptOrder(orderData);
     try {
+      // Busca os dados completos do pedido (incluindo telefone do cliente) direto da API
+      const orderRes = await api.get(`/orders/${orderId}`);
+      const fullOrder = orderRes.data.order;
+      setCurrentReceiptOrder({
+        id: fullOrder.id,
+        client: fullOrder.client?.name || '',
+        clientPhone: fullOrder.client?.phone || '',
+      });
+
       const response = await api.post(`/receipts/${orderId}/generate`, { paymentMethod: 'CASH' });
       // Base URL from the API env, removing /api suffix if present
       const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '');
@@ -56,6 +62,7 @@ export default function OrdersKanban() {
       setGeneratingId(null);
     }
   };
+
 
   const handleNextStatus = async (orderId: string, currentVisualStatus: string) => {
     const statusOrder = ['Recebido', 'Em Costura', 'Pronto', 'Entregue'];
