@@ -151,10 +151,17 @@ export default function OrdersKanban() {
   // Check if we should automatically open a receipt
   useEffect(() => {
     if (location.state?.openReceiptFor) {
-      handleGenerateReceipt(location.state.openReceiptFor);
-      navigate(location.pathname, { replace: true, state: {} });
+      const orderId = location.state.openReceiptFor;
+      
+      // Limpa o estado silenciosamente para evitar loops no React Router ao recarregar a página
+      window.history.replaceState({}, document.title);
+      
+      // Um pequeno delay garante que o DOM e os hooks estão prontos antes da chamada da API
+      setTimeout(() => {
+        handleGenerateReceipt(orderId);
+      }, 500);
     }
-  }, [location.state, navigate, location.pathname]);
+  }, [location.state]);
 
   // ── Drag handlers ──────────────────────────────────────────────────────────
   const onDragStart = (orderId: string) => {

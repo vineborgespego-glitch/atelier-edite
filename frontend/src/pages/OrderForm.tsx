@@ -163,7 +163,6 @@ export default function OrderForm() {
       console.log('Final Client ID:', finalClientId);
       console.log('Formatted Items:', formattedItems);
 
-      // Cria pedido
       const response = await api.post('/orders', {
         clientId: finalClientId,
         title: formattedItems[0]?.description || 'Serviço de Costura',
@@ -175,7 +174,12 @@ export default function OrderForm() {
         notes
       });
       
-      navigate('/app/orders', { state: { openReceiptFor: response.data.order.id } });
+      const orderId = response.data?.order?.id || response.data?.id;
+      if (orderId) {
+        navigate('/app/orders', { state: { openReceiptFor: orderId } });
+      } else {
+        navigate('/app/orders');
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao registrar. Verifique os dados.');
     } finally {
