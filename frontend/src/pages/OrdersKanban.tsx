@@ -458,7 +458,7 @@ export default function OrdersKanban() {
                   const phone = '55' + rawPhone.replace(/\D/g, '');
                   const clientName = currentReceiptOrder?.client || 'cliente';
                   const message = encodeURIComponent(
-                    `Olá ${clientName}! 😊\n\nSegue o comprovante do seu pedido no *Atelier Édite*. 🎀\n\nQualquer dúvida estou à disposição! 📲`
+                    `Ol\u00e1 ${clientName}! \u{1F60A}\n\nSegue o comprovante do seu pedido no *Atelier \u00c9dite*. \u{1F380}\n\nQualquer d\u00favida estou \u00e0 disposi\u00e7\u00e3o! \u{1F4F2}`
                   );
                   const waUrl = phone.length > 4
                     ? `https://wa.me/${phone}?text=${message}`
