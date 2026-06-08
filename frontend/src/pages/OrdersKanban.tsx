@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar, Pencil } from 'lucide-react';
+import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Visual → Backend status map
@@ -92,6 +92,18 @@ export default function OrdersKanban() {
     } catch (error) {
       console.error('Error marking as paid:', error);
       alert('Erro ao registrar pagamento.');
+    }
+  };
+
+  const handleDelete = async (orderId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) {
+      try {
+        await api.delete(`/orders/${orderId}`);
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+      } catch (error) {
+        console.error('Error deleting order:', error);
+        alert('Erro ao excluir pedido.');
+      }
     }
   };
 
@@ -256,7 +268,16 @@ export default function OrdersKanban() {
                       <GripVertical size={16} className="text-mauve/30 group-hover:text-mauve/60 transition-colors flex-shrink-0" />
                       <h4 className="font-display font-bold text-dark text-lg">{order.client}</h4>
                     </div>
-                    <span className="text-rosegold text-xl">🎀</span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
+                        className="text-mauve/40 hover:text-red-400 transition-colors p-1"
+                        title="Excluir Pedido"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <span className="text-rosegold text-xl">🎀</span>
+                    </div>
                   </div>
 
                   <div className="ml-6 space-y-1 mb-3">
