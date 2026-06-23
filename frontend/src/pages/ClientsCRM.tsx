@@ -4,8 +4,9 @@ import api from '../services/api';
 import { Search, ChevronRight, ChevronDown, MessageCircle, Trash2, Pencil, HeartHandshake } from 'lucide-react';
 import { format } from 'date-fns';
 
-// Dias sem pedir para considerar um cliente "inativo" (alvo de reativação)
-const INACTIVE_DAYS = 60;
+// Períodos (em dias) para o filtro de clientes inativos / reativação
+const INACTIVE_PRESETS = [30, 60, 90, 120];
+const DEFAULT_INACTIVE_DAYS = 60;
 
 const daysSince = (iso?: string | null) => {
   if (!iso) return null;
@@ -38,6 +39,8 @@ export default function ClientsCRM() {
   const [clients, setClients] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'inactive'>('all');
+  const [inactiveDays, setInactiveDays] = useState(DEFAULT_INACTIVE_DAYS);
+  const [monthsInput, setMonthsInput] = useState('');
 
   useEffect(() => {
     async function loadClients() {
@@ -99,10 +102,10 @@ export default function ClientsCRM() {
       return nameMatch || phoneMatch;
     })
     .filter(c => {
-      // Modo "inativos": só quem já pediu e o último pedido foi há 60+ dias
+      // Modo "inativos": só quem já pediu e o último pedido passou do período escolhido
       if (filterMode !== 'inactive') return true;
       const d = daysSince(c.lastOrderAt);
-      return d !== null && d >= INACTIVE_DAYS;
+      return d !== null && d >= inactiveDays;
     })
     .sort((a, b) => {
       // No modo inativos, ordena do mais "sumido" para o menos
@@ -112,7 +115,7 @@ export default function ClientsCRM() {
 
   const inactiveCount = clients.filter(c => {
     const d = daysSince(c.lastOrderAt);
-    return d !== null && d >= INACTIVE_DAYS;
+    return d !== null && d >= inactiveDays;
   }).length;
 
   return (
@@ -142,26 +145,64 @@ export default function ClientsCRM() {
       </div>
 
       {/* Filtro: todos x inativos (reativação) */}
-      <div className="flex items-center gap-2 mb-6">
-        <button
-          onClick={() => setFilterMode('all')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filterMode === 'all' ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
-        >
-          Todos
-        </button>
-        <button
-          onClick={() => setFilterMode('inactive')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${filterMode === 'inactive' ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
-        >
-          <HeartHandshake size={16} />
-          Inativos (60+ dias)
-          <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${filterMode === 'inactive' ? 'bg-white/25 text-white' : 'bg-blush text-rosegold'}`}>{inactiveCount}</span>
-        </button>
+      <div className="mb-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFilterMode('all')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filterMode === 'all' ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setFilterMode('inactive')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${filterMode === 'inactive' ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
+          >
+            <HeartHandshake size={16} />
+            Inativos
+            <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${filterMode === 'inactive' ? 'bg-white/25 text-white' : 'bg-blush text-rosegold'}`}>{inactiveCount}</span>
+          </button>
+        </div>
+
+        {/* Seletor de período (só aparece no modo inativos) */}
+        {filterMode === 'inactive' && (
+          <div className="flex flex-wrap items-center gap-2 pl-1">
+            <span className="text-sm text-mauve mr-1">Sem pedir há mais de:</span>
+            {INACTIVE_PRESETS.map(days => {
+              const active = !monthsInput && inactiveDays === days;
+              return (
+                <button
+                  key={days}
+                  onClick={() => { setInactiveDays(days); setMonthsInput(''); }}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${active ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
+                >
+                  {days} dias
+                </button>
+              );
+            })}
+            <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border transition-all ${monthsInput ? 'bg-rosegold text-white border-rosegold' : 'bg-white text-mauve border-[#F5E6E8]'}`}>
+              <span>ou</span>
+              <input
+                type="number"
+                min={1}
+                value={monthsInput}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setMonthsInput(v);
+                  const m = parseInt(v, 10);
+                  if (m > 0) setInactiveDays(m * 30);
+                }}
+                placeholder="0"
+                className={`w-12 bg-transparent text-center focus:outline-none ${monthsInput ? 'text-white placeholder:text-white/60' : 'text-dark placeholder:text-mauve/50'}`}
+              />
+              <span>meses</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {filterMode === 'inactive' && filteredClients.length === 0 && (
         <div className="coquette-card p-8 text-center text-mauve">
-          Nenhum cliente inativo há mais de {INACTIVE_DAYS} dias. Tudo em dia por aqui! 🎀
+          Nenhum cliente inativo há mais de {inactiveDays} dias. Tudo em dia por aqui! 🎀
         </div>
       )}
 
