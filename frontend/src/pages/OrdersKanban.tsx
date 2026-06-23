@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar, Pencil, Trash2 } from 'lucide-react';
+import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar, Pencil, Trash2, Search } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // Visual → Backend status map
@@ -11,10 +11,34 @@ const VISUAL_TO_BACKEND: Record<string, string> = {
   'Entregue': 'DELIVERED',
 };
 
+// Avisos automaticos no WhatsApp ao mudar o status do pedido.
+// IMPORTANTE: nunca colar emojis nem acentos literais aqui — usar escapes
+// \u{...} evita o problema de "caracteres especiais" (mojibake) fora de UTF-8.
+const INSTAGRAM_URL = 'https://instagram.com/borgesmariaedite';
+const GOOGLE_REVIEW_URL = 'https://www.google.com/maps?cid=18089226519185099016'; // perfil/avaliações no Google
+
+function notifyClientByStatus(order: any, newVisualStatus: string) {
+  // So dispara nos status "Pronto" (finalizado) e "Entregue"
+  if (newVisualStatus !== 'Pronto' && newVisualStatus !== 'Entregue') return;
+
+  const digits = (order?.clientPhone || '').replace(/\D/g, '');
+  if (!digits) return; // sem telefone cadastrado, nao ha como avisar
+  const phone = '55' + digits;
+  const clientName = order?.client || 'cliente';
+
+  const text = newVisualStatus === 'Pronto'
+    ? `Oi ${clientName}! \u{1F60A} Passando para avisar que o seu pedido no *Atelier Édite* está prontinho e finalizado! \u{1F380}\u{2728} Podemos combinar a retirada? \u{1F4F2}`
+    : `${clientName}, foi um prazer costurar para você! \u{1F495}\n\nSe quiser acompanhar nossos trabalhos, siga a gente no Instagram: ${INSTAGRAM_URL} \u{1F4F8}\n\nE se puder, deixe sua avaliação no Google — ajuda demais o nosso atelier! \u{2B50}\u{1F64F}\n${GOOGLE_REVIEW_URL}`;
+
+  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  setTimeout(() => window.open(waUrl, '_blank'), 300);
+}
+
 export default function OrdersKanban() {
   const navigate = useNavigate();
   const location = useLocation();
   const [orders, setOrders] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -71,6 +95,7 @@ export default function OrdersKanban() {
 
     const nextVisualStatus = statusOrder[currentIndex + 1];
     const backendStatus = VISUAL_TO_BACKEND[nextVisualStatus];
+    const order = orders.find(o => o.id === orderId);
 
     try {
       await api.patch(`/orders/${orderId}/status`, { status: backendStatus });
@@ -79,6 +104,7 @@ export default function OrdersKanban() {
         const progress = nextVisualStatus === 'Recebido' ? 25 : nextVisualStatus === 'Em Costura' ? 50 : nextVisualStatus === 'Pronto' ? 75 : 100;
         return { ...o, status: nextVisualStatus, progress };
       }));
+      notifyClientByStatus(order, nextVisualStatus);
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Erro ao avançar pedido.');
@@ -205,6 +231,7 @@ export default function OrdersKanban() {
 
     try {
       await api.patch(`/orders/${id}/status`, { status: backendStatus });
+      notifyClientByStatus(order, colStatus);
     } catch (error) {
       console.error('Failed to update status:', error);
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: order.status, progress: order.progress } : o));
@@ -214,6 +241,13 @@ export default function OrdersKanban() {
 
   const onDragEnd = () => setDragOverCol(null);
   // ──────────────────────────────────────────────────────────────────────────
+
+  // Filtra os cards pelo nome do cliente, sem distinção de maiúsculas/minúsculas
+  const matchesSearch = (o: any) => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    return o.client?.toLowerCase().includes(term);
+  };
 
   const columns = [
     { title: 'Recebido', status: 'Recebido', icon: Package, color: 'bg-[#E5DDF5]/60 text-[#9B7E8A]', bar: 'bg-[#E5DDF5]', dropBorder: 'border-[#E5DDF5] bg-[#E5DDF5]/10' },
@@ -234,6 +268,27 @@ export default function OrdersKanban() {
           <span>Novo Pedido</span>
         </button>
       </header>
+
+      {/* Search Bar — busca por nome do cliente */}
+      <div className="relative w-full max-w-md mb-6">
+        <Search size={20} className="absolute left-4 top-3.5 text-mauve" />
+        <input
+          type="text"
+          placeholder="Buscar por nome do cliente..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-white border border-white shadow-sm rounded-full pl-12 pr-10 py-3 text-dark focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm('')}
+            className="absolute right-4 top-3.5 text-mauve hover:text-rosegold transition-colors"
+            title="Limpar busca"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
 
       {/* Visual Pipeline Header */}
       <div className="flex w-full mb-8 overflow-x-auto pb-2">
@@ -268,7 +323,7 @@ export default function OrdersKanban() {
             <h3 className="font-display font-bold text-lg mb-4 text-dark flex items-center">
               {col.title}
               <span className="ml-2 bg-white text-xs py-0.5 px-2 rounded-full text-mauve shadow-sm">
-                {orders.filter(o => o.status === col.status).length}
+                {orders.filter(o => o.status === col.status && matchesSearch(o)).length}
               </span>
               {dragOverCol === col.status && (
                 <span className="ml-auto text-xs text-mauve animate-pulse">Solte aqui ✨</span>
@@ -276,14 +331,14 @@ export default function OrdersKanban() {
             </h3>
 
             {/* Drop zone hint when empty */}
-            {orders.filter(o => o.status === col.status).length === 0 && (
+            {orders.filter(o => o.status === col.status && matchesSearch(o)).length === 0 && (
               <div className={`flex-1 min-h-[80px] rounded-xl border-2 border-dashed flex items-center justify-center text-sm text-mauve/50 transition-all ${dragOverCol === col.status ? 'border-rosegold text-rosegold' : 'border-[#F5E6E8]'}`}>
                 {dragOverCol === col.status ? 'Solte para mover aqui 🎀' : 'Arraste um pedido aqui'}
               </div>
             )}
 
             <div className="space-y-4">
-              {orders.filter(o => o.status === col.status).map(order => (
+              {orders.filter(o => o.status === col.status && matchesSearch(o)).map(order => (
                 <div
                   key={order.id}
                   draggable

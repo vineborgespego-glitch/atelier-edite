@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { Search, ChevronRight, ChevronDown, MessageCircle, Trash2 } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, MessageCircle, Trash2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 
 const getWhatsAppLink = (phone: string) => {
@@ -20,6 +21,7 @@ const getWhatsAppLink = (phone: string) => {
 };
 
 export default function ClientsCRM() {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -128,7 +130,15 @@ export default function ClientsCRM() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <button 
+                <button
+                  onClick={() => navigate(`/app/clients/${client.id}/edit`)}
+                  className="p-2 bg-mauve/10 text-mauve rounded-full hover:bg-mauve/20 hover:text-rosegold transition-colors"
+                  title="Editar Cliente"
+                >
+                  <Pencil size={20} />
+                </button>
+
+                <button
                   onClick={() => handleDeleteClient(client.id)}
                   className="p-2 bg-red-50 text-red-400 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
                   title="Excluir Cliente Permanentemente"

@@ -49,6 +49,7 @@ function App() {
           <Route path="clients">
             <Route index element={<ClientsCRM />} />
             <Route path="new" element={<ClientForm />} />
+            <Route path=":id/edit" element={<ClientForm />} />
           </Route>
 
 
