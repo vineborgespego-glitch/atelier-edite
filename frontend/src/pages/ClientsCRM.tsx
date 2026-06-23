@@ -1,29 +1,43 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { Search, ChevronRight, ChevronDown, MessageCircle, Trash2, Pencil } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, MessageCircle, Trash2, Pencil, HeartHandshake } from 'lucide-react';
 import { format } from 'date-fns';
 
-const getWhatsAppLink = (phone: string) => {
+// Dias sem pedir para considerar um cliente "inativo" (alvo de reativação)
+const INACTIVE_DAYS = 60;
+
+const daysSince = (iso?: string | null) => {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+};
+
+// Mensagem calorosa de reativação (sem emojis — a Maria envia pelo computador)
+const reactivationMessage = (name: string) =>
+  `Oi ${name}! Estamos com saudade de você aqui no Atelier Edite. Já faz um tempinho desde sua última visita... adoraríamos te receber de novo e preparar algo especial pra você. Quando quiser, é só me chamar por aqui!`;
+
+const getWhatsAppLink = (phone: string, text?: string) => {
   if (!phone) return '#';
   let cleaned = phone.replace(/\D/g, ''); // Remove everything except digits
-  
+
   // Case 1: Only the number without DDD (8 or 9 digits)
   if (cleaned.length === 8 || cleaned.length === 9) {
     cleaned = '5541' + cleaned; // Adds Brazil (55) and Curitiba (41) as default
-  } 
+  }
   // Case 2: Number with DDD but without country code (10 or 11 digits)
   else if (cleaned.length === 10 || cleaned.length === 11) {
     cleaned = '55' + cleaned;
   }
-  
-  return `https://wa.me/${cleaned}`;
+
+  const base = `https://wa.me/${cleaned}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
 };
 
 export default function ClientsCRM() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterMode, setFilterMode] = useState<'all' | 'inactive'>('all');
 
   useEffect(() => {
     async function loadClients() {
@@ -36,6 +50,8 @@ export default function ClientsCRM() {
           cpfCnpj: c.cpfCnpj,
           alert: !c.cpfCnpj ? 'Documento ausente, por favor verificar.' : undefined,
           expanded: false,
+          // Os pedidos vêm ordenados do mais recente para o mais antigo
+          lastOrderAt: c.orders?.[0]?.createdAt || null,
           orders: (c.orders || []).map((o: any) => {
             let color = 'bg-blush';
             if (o.status === 'READY') color = 'bg-info';
@@ -73,14 +89,31 @@ export default function ClientsCRM() {
     setClients(clients.map(c => c.id === id ? { ...c, expanded: !c.expanded } : c));
   };
 
-  const filteredClients = clients.filter(c => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
-    const nameMatch = c.name.toLowerCase().includes(term);
-    const phoneDigits = term.replace(/\D/g, '');
-    const phoneMatch = phoneDigits.length >= 3 && c.phone && c.phone.replace(/\D/g, '').includes(phoneDigits);
-    return nameMatch || phoneMatch;
-  });
+  const filteredClients = clients
+    .filter(c => {
+      const term = searchTerm.toLowerCase().trim();
+      if (!term) return true;
+      const nameMatch = c.name.toLowerCase().includes(term);
+      const phoneDigits = term.replace(/\D/g, '');
+      const phoneMatch = phoneDigits.length >= 3 && c.phone && c.phone.replace(/\D/g, '').includes(phoneDigits);
+      return nameMatch || phoneMatch;
+    })
+    .filter(c => {
+      // Modo "inativos": só quem já pediu e o último pedido foi há 60+ dias
+      if (filterMode !== 'inactive') return true;
+      const d = daysSince(c.lastOrderAt);
+      return d !== null && d >= INACTIVE_DAYS;
+    })
+    .sort((a, b) => {
+      // No modo inativos, ordena do mais "sumido" para o menos
+      if (filterMode !== 'inactive') return 0;
+      return (daysSince(b.lastOrderAt) || 0) - (daysSince(a.lastOrderAt) || 0);
+    });
+
+  const inactiveCount = clients.filter(c => {
+    const d = daysSince(c.lastOrderAt);
+    return d !== null && d >= INACTIVE_DAYS;
+  }).length;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -108,6 +141,30 @@ export default function ClientsCRM() {
         />
       </div>
 
+      {/* Filtro: todos x inativos (reativação) */}
+      <div className="flex items-center gap-2 mb-6">
+        <button
+          onClick={() => setFilterMode('all')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filterMode === 'all' ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
+        >
+          Todos
+        </button>
+        <button
+          onClick={() => setFilterMode('inactive')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${filterMode === 'inactive' ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
+        >
+          <HeartHandshake size={16} />
+          Inativos (60+ dias)
+          <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${filterMode === 'inactive' ? 'bg-white/25 text-white' : 'bg-blush text-rosegold'}`}>{inactiveCount}</span>
+        </button>
+      </div>
+
+      {filterMode === 'inactive' && filteredClients.length === 0 && (
+        <div className="coquette-card p-8 text-center text-mauve">
+          Nenhum cliente inativo há mais de {INACTIVE_DAYS} dias. Tudo em dia por aqui! 🎀
+        </div>
+      )}
+
       <div className="space-y-4">
         {filteredClients.map(client => (
           <div key={client.id} className="coquette-card p-0 overflow-hidden">
@@ -126,6 +183,11 @@ export default function ClientsCRM() {
                   <div className="flex items-center text-sm text-mauve mt-0.5">
                     {client.phone ? client.phone : 'Sem telefone'}
                   </div>
+                  {filterMode === 'inactive' && client.lastOrderAt && (
+                    <div className="text-xs text-red-400 mt-0.5 font-medium">
+                      Há {daysSince(client.lastOrderAt)} dias sem pedir
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -147,12 +209,12 @@ export default function ClientsCRM() {
                 </button>
 
                 {client.phone && (
-                  <a 
-                    href={getWhatsAppLink(client.phone)} 
-                    target="_blank" 
+                  <a
+                    href={getWhatsAppLink(client.phone, filterMode === 'inactive' ? reactivationMessage(client.name) : undefined)}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 bg-[#25D366]/10 text-[#25D366] rounded-full hover:bg-[#25D366]/20 transition-colors"
-                    title="Enviar WhatsApp"
+                    title={filterMode === 'inactive' ? 'Enviar mensagem de reativação' : 'Enviar WhatsApp'}
                   >
                     <MessageCircle size={20} />
                   </a>
