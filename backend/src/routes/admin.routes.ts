@@ -9,50 +9,77 @@ router.use(authenticate);
 router.get('/kpis', async (req: AuthRequest, res: Response) => {
   const userId = req.userId!;
 
-  // Current month bounds
+  // Date bounds
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  // Últimos 6 meses (do mais antigo para o atual)
+  const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const last6Months = Array.from({ length: 6 }, (_, i) =>
+    new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+  );
+
+  const validStatus = { notIn: ['CANCELLED', 'ARCHIVED'] } as any;
 
   const [
     totalClients,
     totalOrders,
     pendingOrders,
     monthlyRevenueAggr,
+    prevMonthRevenueAggr,
+    avgTicketAggr,
+    newClientsThisMonth,
     ordersByStatus
   ] = await Promise.all([
     prisma.client.count({ where: { userId } }),
-    prisma.order.count({ 
-      where: { 
-        userId,
-        status: { not: 'ARCHIVED' }
-      } 
+    prisma.order.count({ where: { userId, status: { not: 'ARCHIVED' } } }),
+    prisma.order.count({
+      where: { userId, status: { in: ['DRAFT', 'CONFIRMED', 'IN_PRODUCTION', 'READY', 'PAID'] } }
     }),
-    prisma.order.count({ 
-      where: { 
-        userId, 
-        status: { in: ['DRAFT', 'CONFIRMED', 'IN_PRODUCTION', 'READY', 'PAID'] } 
-      } 
-    }),
+    // Faturamento do mês atual
     prisma.order.aggregate({
       _sum: { totalAmount: true },
-      where: {
-        userId,
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
-        status: { notIn: ['CANCELLED', 'ARCHIVED'] }
-      }
+      where: { userId, createdAt: { gte: startOfMonth, lt: startOfNextMonth }, status: validStatus }
     }),
+    // Faturamento do mês anterior (para o comparativo)
+    prisma.order.aggregate({
+      _sum: { totalAmount: true },
+      where: { userId, createdAt: { gte: startOfPrevMonth, lt: startOfMonth }, status: validStatus }
+    }),
+    // Ticket médio geral (todos os pedidos válidos)
+    prisma.order.aggregate({
+      _avg: { totalAmount: true },
+      where: { userId, status: validStatus }
+    }),
+    // Novos clientes no mês
+    prisma.client.count({ where: { userId, createdAt: { gte: startOfMonth, lt: startOfNextMonth } } }),
     prisma.order.groupBy({
       by: ['status'],
-      where: { 
-        userId,
-        status: { not: 'ARCHIVED' }
-      },
+      where: { userId, status: { not: 'ARCHIVED' } },
       _count: { _all: true }
     })
   ]);
 
-  const revenue = monthlyRevenueAggr._sum?.totalAmount || 0;
+  // Série de faturamento dos últimos 6 meses
+  const revenueSeriesAggr = await Promise.all(
+    last6Months.map((m) => {
+      const start = m;
+      const end = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+      return prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { userId, createdAt: { gte: start, lt: end }, status: validStatus }
+      });
+    })
+  );
+
+  const num = (v: any) => Number(v || 0);
+
+  const revenueSeries = last6Months.map((m, idx) => ({
+    label: monthLabels[m.getMonth()],
+    value: num(revenueSeriesAggr[idx]._sum?.totalAmount)
+  }));
 
   // Transform status aggregation for charts
   const statusCounts = ordersByStatus.reduce((acc, curr: any) => {
@@ -66,10 +93,14 @@ router.get('/kpis', async (req: AuthRequest, res: Response) => {
       totalClients,
       totalOrders,
       pendingOrders,
-      monthlyRevenue: revenue
+      monthlyRevenue: num(monthlyRevenueAggr._sum?.totalAmount),
+      previousMonthRevenue: num(prevMonthRevenueAggr._sum?.totalAmount),
+      avgTicket: num(avgTicketAggr._avg?.totalAmount),
+      newClientsThisMonth
     },
     charts: {
-      statusCounts
+      statusCounts,
+      revenueSeries
     }
   });
 });
