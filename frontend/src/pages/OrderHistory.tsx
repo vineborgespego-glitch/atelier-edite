@@ -3,7 +3,7 @@ import api from '../services/api';
 import { Search, Archive, Calendar, User, Package, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { X, CheckSquare, DollarSign } from 'lucide-react';
+import { X, CheckSquare } from 'lucide-react';
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState<any[]>([]);

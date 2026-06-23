@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save, Store, Mail, Phone, MapPin, CheckCircle2, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
 
 export default function Admin() {
   const navigate = useNavigate();
