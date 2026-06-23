@@ -12,8 +12,9 @@ const VISUAL_TO_BACKEND: Record<string, string> = {
 };
 
 // Avisos automaticos no WhatsApp ao mudar o status do pedido.
-// IMPORTANTE: nunca colar emojis nem acentos literais aqui — usar escapes
-// \u{...} evita o problema de "caracteres especiais" (mojibake) fora de UTF-8.
+// Sem emojis de proposito: o WhatsApp Web/Desktop no Windows corrompe emojis
+// vindos de links wa.me (viram "?"/quadradinho). Como a Maria envia pelo
+// computador, mantemos o texto limpo para nunca quebrar.
 const INSTAGRAM_URL = 'https://instagram.com/borgesmariaedite';
 const GOOGLE_REVIEW_URL = 'https://www.google.com/maps?cid=18089226519185099016'; // perfil/avaliações no Google
 
@@ -27,8 +28,8 @@ function notifyClientByStatus(order: any, newVisualStatus: string) {
   const clientName = order?.client || 'cliente';
 
   const text = newVisualStatus === 'Pronto'
-    ? `Oi ${clientName}! \u{1F60A} Passando para avisar que o seu pedido no *Atelier Édite* está prontinho e finalizado! \u{1F380}\u{2728} Podemos combinar a retirada? \u{1F4F2}`
-    : `${clientName}, foi um prazer costurar para você! \u{1F495}\n\nSe quiser acompanhar nossos trabalhos, siga a gente no Instagram: ${INSTAGRAM_URL} \u{1F4F8}\n\nE se puder, deixe sua avaliação no Google — ajuda demais o nosso atelier! \u{2B50}\u{1F64F}\n${GOOGLE_REVIEW_URL}`;
+    ? `Oi ${clientName}! Passando para avisar que o seu pedido no *Atelier Edite* está prontinho e finalizado! Podemos combinar a retirada?`
+    : `${clientName}, foi um prazer costurar para você!\n\nSe quiser acompanhar nossos trabalhos, siga a gente no Instagram: ${INSTAGRAM_URL}\n\nE se puder, deixe sua avaliação no Google — ajuda demais o nosso atelier!\n${GOOGLE_REVIEW_URL}`;
 
   const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
   setTimeout(() => window.open(waUrl, '_blank'), 300);
@@ -513,7 +514,7 @@ export default function OrdersKanban() {
                   const phone = '55' + rawPhone.replace(/\D/g, '');
                   const clientName = currentReceiptOrder?.client || 'cliente';
                   const message = encodeURIComponent(
-                    `Ol\u00e1 ${clientName}! \u{1F60A}\n\nSegue o comprovante do seu pedido no *Atelier \u00c9dite*. \u{1F380}\n\nQualquer d\u00favida estou \u00e0 disposi\u00e7\u00e3o! \u{1F4F2}`
+                    `Ol\u00e1 ${clientName}!\n\nSegue o comprovante do seu pedido no *Atelier Edite*.\n\nQualquer d\u00favida estou \u00e0 disposi\u00e7\u00e3o!`
                   );
                   const waUrl = phone.length > 4
                     ? `https://wa.me/${phone}?text=${message}`

@@ -1,4 +1,4 @@
-# 🧵 Atelier Édite — Sistema de Gestão SaaS
+# 🧵 Atelier Edite — Sistema de Gestão SaaS
 
 Sistema completo de gestão para ateliers de costura, cobrindo o ciclo **Order-to-Cash (O2C)**: entrada de pedido → validação automática → produção → recibo em PDF → notificação via WhatsApp → cupons de fidelização.
 

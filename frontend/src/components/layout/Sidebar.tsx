@@ -20,7 +20,7 @@ export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
 
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
-  const rawName = user?.atelierName || user?.name || 'Édite';
+  const rawName = user?.atelierName || user?.name || 'Edite';
   
   // "Lock" logic: don't double the word "Atelier"
   const displayName = rawName.toLowerCase().startsWith('atelier') 

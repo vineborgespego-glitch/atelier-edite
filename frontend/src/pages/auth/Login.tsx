@@ -99,7 +99,7 @@ export default function Login() {
         <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 2px, transparent 2px)', backgroundSize: '40px 40px' }}></div>
 
         <div className="relative z-10">
-          <h1 className="font-display font-bold text-3xl text-white tracking-tight">Atelier Édite</h1>
+          <h1 className="font-display font-bold text-3xl text-white tracking-tight">Atelier Edite</h1>
         </div>
 
         <div className="relative z-10 text-white max-w-md">
@@ -108,7 +108,7 @@ export default function Login() {
         </div>
 
         <div className="relative z-10 text-white/50 text-sm">
-          © 2026 Atelier Édite
+          © 2026 Atelier Edite
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Heading */}
           <div className="md:hidden text-center mb-10">
-            <h1 className="font-display font-bold text-3xl text-rosegold tracking-tight mb-2">Atelier Édite</h1>
+            <h1 className="font-display font-bold text-3xl text-rosegold tracking-tight mb-2">Atelier Edite</h1>
             <p className="text-mauve text-sm">A gestão que entende a arte da costura.</p>
           </div>
 

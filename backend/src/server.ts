@@ -32,7 +32,7 @@ async function main() {
     
     app.get('/', (req, res) => {
       console.log('🧶 Root check received');
-      res.status(200).send('Atelier Édite Online');
+      res.status(200).send('Atelier Edite Online');
     });
 
     await prisma.$connect();

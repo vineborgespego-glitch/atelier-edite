@@ -13,10 +13,10 @@ async function main() {
     update: {},
     create: {
       email: 'contato@atelieredite.com.br',
-      name: 'Maria (Atelier Édite)',
+      name: 'Maria (Atelier Edite)',
       passwordHash,
       role: 'OWNER',
-      atelierName: 'Atelier Édite by Maria',
+      atelierName: 'Atelier Edite by Maria',
       phone: '+55 11 98888-7777',
     },
   });

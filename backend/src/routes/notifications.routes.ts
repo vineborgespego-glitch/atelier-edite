@@ -39,7 +39,7 @@ router.post('/whatsapp', async (req: AuthRequest, res: Response) => {
   } else if (type === 'THANK_YOU_COUPON') {
     message = `Muito obrigada pela preferência, ${client.name}! Como mimo, aqui está seu cupom "PORTES-GRATIS" para usar na próxima compra. 🎀`;
   } else {
-    message = req.body.message || 'Mensagem do Atelier Édite.';
+    message = req.body.message || 'Mensagem do Atelier Edite.';
   }
 
   try {

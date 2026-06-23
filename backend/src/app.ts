@@ -75,12 +75,12 @@ app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 // Root route for Railway Health Check
 app.get('/', (_req, res) => {
-  res.send('🧶 Atelier Édite API is online!');
+  res.send('🧶 Atelier Edite API is online!');
 });
 
 // HEALTH CHECK
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'Atelier Édite API', version: '1.0.0' });
+  res.json({ status: 'ok', service: 'Atelier Edite API', version: '1.0.0' });
 });
 
 // API Routes
