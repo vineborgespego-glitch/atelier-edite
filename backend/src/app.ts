@@ -11,6 +11,7 @@ import receiptRoutes from './routes/receipts.routes';
 import couponRoutes from './routes/coupons.routes';
 import notificationRoutes from './routes/notifications.routes';
 import adminRoutes from './routes/admin.routes';
+import whatsappRoutes from './routes/whatsapp.routes';
 
 const app = express();
 
@@ -65,6 +66,10 @@ app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200);
 });
+
+// WhatsApp (Evolution) — montado ANTES do body parser global, com limite maior:
+// áudios chegam em base64 e estouram os 10mb padrão
+app.use('/api/whatsapp', express.json({ limit: '50mb' }), whatsappRoutes);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));

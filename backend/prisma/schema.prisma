@@ -45,8 +45,60 @@ model Client {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   notifications Notification[]
   orders        Order[]
+  waContacts    WaContact[]
 
   @@map("clients")
+}
+
+// ── WhatsApp (Evolution GO) ─────────────────────────────────────────────────
+
+model WaContact {
+  id        String      @id @default(uuid())
+  userId    String
+  phone     String // chave do contato: dígitos do telefone (ou LID temporário até o telefone aparecer)
+  name      String?
+  clientId  String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  client    Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  messages  WaMessage[]
+
+  @@unique([userId, phone])
+  @@map("wa_contacts")
+}
+
+model WaMessage {
+  id            String      @id @default(uuid())
+  contactId     String
+  direction     WaDirection // IN = cliente, OUT = dono/atendente
+  content       String
+  msgType       String      @default("text")
+  transcription String?
+  mediaPath     String?
+  waMessageId   String?     @unique // id da mensagem no WhatsApp — garante idempotência nos retries do webhook
+  createdAt     DateTime    @default(now())
+  contact       WaContact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("wa_messages")
+}
+
+model WaLidMap {
+  lid   String @id
+  phone String
+
+  @@map("wa_lid_map")
+}
+
+model WaBlocklist {
+  phone String  @id
+  note  String?
+
+  @@map("wa_blocklist")
+}
+
+enum WaDirection {
+  IN
+  OUT
 }
 
 model Order {

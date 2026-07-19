@@ -4,6 +4,7 @@ if (process.env.NODE_ENV !== 'production') {
 import app from './app';
 import { prisma } from './lib/prisma';
 import { runAutoArchive } from './services/autoArchive';
+import { startTranscriptionWorker } from './services/waTranscription';
 
 // Capturar erros globais para diagnóstico
 process.on('uncaughtException', (err) => {
@@ -71,7 +72,10 @@ async function main() {
       }, 60000);
 
       // Schedule every 24h
-      setInterval(runAutoArchive, 24 * 60 * 60 * 1000); 
+      setInterval(runAutoArchive, 24 * 60 * 60 * 1000);
+
+      // Retry de transcrições de áudio pendentes (WhatsApp)
+      startTranscriptionWorker();
   } catch (error: any) {
     console.error('❌ CRITICAL ERROR: Failed to start server');
     console.error('--- Error Details ---');

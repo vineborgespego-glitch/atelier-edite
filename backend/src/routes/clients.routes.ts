@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middlewares/auth';
 import { prisma } from '../lib/prisma';
+import { linkContactsForClient } from '../services/waService';
 
 const router = Router();
 router.use(authenticate);
@@ -91,6 +92,12 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         measures: measures || {},
       },
     });
+
+    // Vincula conversas de WhatsApp já registradas deste telefone (não bloqueia a resposta)
+    linkContactsForClient(req.userId!, client.id, phone).catch((err) =>
+      console.error('[WA] Vínculo retroativo falhou:', err?.message || err)
+    );
+
     return res.status(201).json({ client });
   } catch (error) {
     console.error('Create client error:', error);
@@ -120,6 +127,11 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       measures: measures || existing.measures,
     },
   });
+
+  // Telefone pode ter mudado — tenta vincular conversas de WhatsApp órfãs
+  linkContactsForClient(req.userId!, client.id, phone).catch((err) =>
+    console.error('[WA] Vínculo retroativo falhou:', err?.message || err)
+  );
 
   return res.json({ client });
 });
