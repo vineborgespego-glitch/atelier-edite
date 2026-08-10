@@ -512,13 +512,13 @@ export default function OrdersKanban() {
                   // 2. Abre o WhatsApp com a mensagem e o número do cliente
                   const rawPhone = currentReceiptOrder?.clientPhone || '';
                   const phone = '55' + rawPhone.replace(/\D/g, '');
-                  const clientName = currentReceiptOrder?.client || 'cliente';
-                  const message = encodeURIComponent(
-                    `Ol\u00e1 ${clientName}!\n\nSegue o comprovante do seu pedido no *Atelier Edite*.\n\nQualquer d\u00favida estou \u00e0 disposi\u00e7\u00e3o!`
-                  );
+                  const clientName = encodeURIComponent(currentReceiptOrder?.client || 'cliente');
+                  // Emoji codificados explicitamente para garantir compatibilidade com WhatsApp:
+                  // %F0%9F%98%8A = 😊  |  %F0%9F%8E%80 = 🎀  |  %F0%9F%93%B2 = 📲
+                  const waMessage = `Ol%C3%A1%20${clientName}!%20%F0%9F%98%8A%0A%0ASegue%20o%20comprovante%20do%20seu%20pedido%20no%20*Atelier%20%C3%89dite*.%20%F0%9F%8E%80%0A%0AQualquer%20d%C3%BAvida%20estou%20%C3%A0%20disposi%C3%A7%C3%A3o!%20%F0%9F%93%B2`;
                   const waUrl = phone.length > 4
-                    ? `https://wa.me/${phone}?text=${message}`
-                    : `https://wa.me/?text=${message}`;
+                    ? `https://wa.me/${phone}?text=${waMessage}`
+                    : `https://wa.me/?text=${waMessage}`;
                   setTimeout(() => window.open(waUrl, '_blank'), 500);
                 }}
                 className="flex items-center space-x-2 px-5 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-md text-sm font-bold"
