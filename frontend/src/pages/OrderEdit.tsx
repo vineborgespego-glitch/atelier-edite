@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { Check, Calendar, Plus, Trash2, Loader2, ArrowLeft } from 'lucide-react';
@@ -44,24 +44,33 @@ export default function OrderEdit() {
     loadOrder();
   }, [id]);
 
-  const addItem = () => setItems([...items, { description: '', quantity: 1, unitPrice: '' }]);
+  const addItem = useCallback(() => {
+    setItems(prev => [...prev, { description: '', quantity: 1, unitPrice: '' }]);
+  }, []);
 
-  const removeItem = (index: number) => {
-    if (items.length > 1) setItems(items.filter((_, i) => i !== index));
-  };
+  const removeItem = useCallback((index: number) => {
+    setItems(prev => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
+  }, []);
 
-  const updateItem = (index: number, field: string, value: string | number) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
-  };
+  const updateItem = useCallback((index: number, field: string, value: string | number) => {
+    setItems(prev => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
+  }, []);
 
   const total = useMemo(() => {
-    return items.reduce((acc, item) => {
-      const price = parseFloat(String(item.unitPrice).replace(',', '.')) || 0;
+    let sum = 0;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!item.unitPrice) continue;
+      const priceStr = typeof item.unitPrice === 'string' ? item.unitPrice.replace(',', '.') : String(item.unitPrice);
+      const price = parseFloat(priceStr) || 0;
       const qty = parseFloat(String(item.quantity)) || 0;
-      return acc + price * qty;
-    }, 0);
+      sum += price * qty;
+    }
+    return sum;
   }, [items]);
 
   const handleSubmit = async (e: React.FormEvent) => {
