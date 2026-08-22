@@ -21,8 +21,12 @@ export interface ParsedWaEvent {
   lid: string | null;
   content: string;
   msgType: string;
-  /** Base64 de mídia (áudio), quando a Evolution envia */
+  /** Base64 de mídia (áudio/imagem/vídeo/documento), quando a Evolution envia */
   mediaBase64: string | null;
+  /** mimetype declarado pelo WhatsApp, ex "image/jpeg" */
+  mimetype: string | null;
+  /** nome original, só documentos costumam ter */
+  fileName: string | null;
 }
 
 /** Remove sufixo de device (":xx") e o domínio, deixando só dígitos. */
@@ -57,6 +61,35 @@ export function unwrapMessage(message: any): any {
     guard++;
   }
   return m || {};
+}
+
+/**
+ * Extensão do arquivo a partir do mimetype, com fallback por tipo de mensagem.
+ * Ex: "audio/ogg; codecs=opus" → ogg. Mimetypes "vnd.*" (docx, xlsx) não
+ * compensam mapear — viram bin, o WhatsApp já mostra o nome original.
+ */
+export function extensionFor(mimetype: string | null, msgType: string): string {
+  const sub = (mimetype || '').split(';')[0].split('/')[1];
+  if (sub && !/^vnd/i.test(sub)) {
+    const clean = sub.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+    if (clean) return clean.toLowerCase();
+  }
+  const padrao: Record<string, string> = {
+    audio: 'ogg',
+    image: 'jpg',
+    video: 'mp4',
+    sticker: 'webp',
+    document: 'bin',
+  };
+  return padrao[msgType] || 'bin';
+}
+
+/** Nó da mídia dentro da mensagem, para pegar mimetype e nome do arquivo. */
+export function mediaNode(rawMessage: any): any {
+  const m = unwrapMessage(rawMessage);
+  return (
+    m.audioMessage || m.imageMessage || m.videoMessage || m.documentMessage || m.stickerMessage || null
+  );
 }
 
 /** Extrai texto/marcador e tipo. Retorna null se não há nada aproveitável. */
@@ -172,7 +205,11 @@ export function parseWebhookEvent(body: any): ParsedWaEvent | null {
   const mediaBase64: string | null =
     (rawMessage && rawMessage.base64) || data.base64 || body.base64 || null;
 
+  const media = mediaNode(rawMessage);
+
   return {
+    mimetype: media?.mimetype || data.mimetype || null,
+    fileName: media?.fileName || media?.title || null,
     instanceName: body.instanceName || body.instance || data.instanceName || '',
     chatJid,
     senderJid,

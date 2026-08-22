@@ -12,6 +12,7 @@ import OrderHistory from './pages/OrderHistory';
 import ClientsCRM from './pages/ClientsCRM';
 import ClientForm from './pages/ClientForm';
 import Admin from './pages/Admin';
+import WhatsAppInbox from './pages/WhatsAppInbox';
 
 // Components
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -52,6 +53,8 @@ function App() {
             <Route path=":id/edit" element={<ClientForm />} />
           </Route>
 
+
+          <Route path="whatsapp" element={<WhatsAppInbox />} />
 
           <Route path="admin" element={<Admin />} />
         </Route>

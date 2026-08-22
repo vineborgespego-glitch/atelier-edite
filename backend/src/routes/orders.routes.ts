@@ -2,10 +2,30 @@ import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middlewares/auth';
 import { prisma } from '../lib/prisma';
 import { validateOrder } from '../services/orderValidation';
-import { Prisma } from '@prisma/client';
+import { Prisma, OrderStatus } from '@prisma/client';
+import { sendAuto } from '../services/waAuto';
+import { statusTemplate } from '../services/waTemplates';
 
 const router = Router();
 router.use(authenticate);
+
+const ORDER_STATUSES: string[] = Object.values(OrderStatus);
+
+/** Dispara o aviso de WhatsApp do novo status, se houver template e telefone. */
+async function notifyStatusChange(
+  userId: string,
+  status: string,
+  order: { title: string; dueDate: Date | null },
+  client?: { name: string | null; phone: string | null } | null
+) {
+  const text = statusTemplate(status, order, client?.name);
+  if (!text) return;
+  if (!client?.phone) {
+    console.warn(`[WA] Pedido "${order.title}" mudou para ${status} mas o cliente não tem telefone.`);
+    return;
+  }
+  await sendAuto(userId, client.phone, text, 'auto_status');
+}
 
 // GET /api/orders
 router.get('/', async (req: AuthRequest, res: Response) => {
@@ -141,6 +161,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       include: { items: true, client: true }
     });
 
+    // Pedido nasce CONFIRMED — avisa o cliente que entrou na fila.
+    notifyStatusChange(req.userId!, order.status, order, order.client).catch((err) =>
+      console.error('[WA] Aviso de pedido novo falhou:', err?.message || err)
+    );
+
     return res.status(201).json({ order, warnings: validation.warnings });
   } catch (error: any) {
     console.error('❌ FATAL: Create order error:', error);
@@ -158,9 +183,15 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
   const { status } = req.body;
   if (!status) return res.status(400).json({ error: 'Status é obrigatório' });
+  // Status agora dispara WhatsApp: um valor inválido enviaria (ou silenciaria)
+  // mensagem sem ninguém perceber.
+  if (!ORDER_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `Status inválido: ${status}` });
+  }
 
   const existing = await prisma.order.findFirst({
     where: { id: req.params.id, userId: req.userId },
+    include: { client: true },
   });
   if (!existing) return res.status(404).json({ error: 'Pedido não encontrado' });
 
@@ -171,6 +202,13 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
     where: { id: req.params.id },
     data: updateData,
   });
+
+  // Só avisa em mudança real de status — reclicar no Kanban não remanda.
+  if (existing.status !== status) {
+    notifyStatusChange(req.userId!, status, order, existing.client).catch((err) =>
+      console.error('[WA] Aviso de status falhou:', err?.message || err)
+    );
+  }
 
   return res.json({ order });
 });

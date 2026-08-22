@@ -1,10 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '../lib/prisma';
-import { ParsedWaEvent } from '../lib/waParser';
+import { ParsedWaEvent, extensionFor } from '../lib/waParser';
 import { transcribeAudioFile } from './waTranscription';
+import { describeImageFile } from './waVision';
 
-const AUDIO_DIR = path.resolve(process.cwd(), 'uploads', 'wa-audio');
+/** Tipos de mensagem que trazem arquivo junto. */
+const MEDIA_TYPES = ['audio', 'image', 'video', 'document', 'sticker'];
 
 /** Compara telefones por dígitos, tolerante a 55/DDD/9º dígito ausentes. */
 export function phonesMatch(a?: string | null, b?: string | null): boolean {
@@ -113,19 +115,78 @@ async function isBlocked(phone: string | null, lid: string | null): Promise<bool
   return !!hit;
 }
 
-/** Salva o base64 de áudio em disco. Retorna o caminho relativo ou null. */
-function saveAudioFile(base64: string, waMessageId: string | null): string | null {
+/**
+ * Grava um arquivo de mídia em disco e devolve o caminho relativo servido
+ * pelo /uploads estático (ou null se falhou).
+ * Áudio vai pra uploads/wa-audio — o worker de transcrição já aponta pra lá.
+ */
+export function saveMediaBuffer(
+  buffer: Buffer,
+  nomeBase: string,
+  msgType: string,
+  mimetype: string | null
+): string | null {
   try {
-    fs.mkdirSync(AUDIO_DIR, { recursive: true });
-    const clean = base64.replace(/^data:[^;]+;base64,/, '');
-    const fileName = `${Date.now()}-${(waMessageId || 'audio').replace(/[^a-zA-Z0-9_-]/g, '')}.ogg`;
-    const fullPath = path.join(AUDIO_DIR, fileName);
-    fs.writeFileSync(fullPath, Buffer.from(clean, 'base64'));
-    return path.join('uploads', 'wa-audio', fileName);
+    const subdir = msgType === 'audio' ? 'wa-audio' : 'wa-media';
+    const dir = path.resolve(process.cwd(), 'uploads', subdir);
+    fs.mkdirSync(dir, { recursive: true });
+    const ext = extensionFor(mimetype, msgType);
+    const fileName = `${Date.now()}-${(nomeBase || msgType).replace(/[^a-zA-Z0-9_-]/g, '')}.${ext}`;
+    fs.writeFileSync(path.join(dir, fileName), buffer);
+    return path.join('uploads', subdir, fileName).replace(/\\/g, '/');
   } catch (err) {
-    console.error('[WA] Erro ao salvar áudio:', err);
+    console.error('[WA] Erro ao salvar mídia:', err);
     return null;
   }
+}
+
+function saveMediaFile(
+  base64: string,
+  waMessageId: string | null,
+  msgType: string,
+  mimetype: string | null
+): string | null {
+  const clean = base64.replace(/^data:[^;]+;base64,/, '');
+  return saveMediaBuffer(Buffer.from(clean, 'base64'), waMessageId || msgType, msgType, mimetype);
+}
+
+/**
+ * Grava no histórico uma mensagem que NÓS enviamos (automática ou manual).
+ * A Evolution até ecoa o fromMe pelo webhook, mas sem garantia de chegada nem
+ * de prazo — e o dedupe por waMessageId não cobre este caso (não temos o ID).
+ * Contato inexistente é criado, já vinculado ao Client se o telefone bater.
+ */
+export async function recordOutgoing(
+  userId: string,
+  phone: string,
+  content: string,
+  msgType = 'text',
+  mediaPath: string | null = null
+) {
+  const key = (phone || '').replace(/\D/g, '');
+  if (!key) return;
+
+  let contact = await prisma.waContact.findUnique({
+    where: { userId_phone: { userId, phone: key } },
+  });
+  if (!contact) {
+    // O cadastro pode ter o número sem 55/DDD e o webhook grava com — sem esta
+    // busca tolerante o mesmo cliente vira duas conversas.
+    // ponytail: varre os contatos do user em memória; indexar se passar de alguns milhares
+    const all = await prisma.waContact.findMany({ where: { userId } });
+    contact = all.find((c) => phonesMatch(c.phone, key)) || null;
+  }
+  if (!contact) {
+    contact = await prisma.waContact.create({
+      data: { userId, phone: key, clientId: await findMatchingClientId(userId, key) },
+    });
+  }
+
+  await prisma.waMessage.create({
+    data: { contactId: contact.id, direction: 'OUT', content, msgType, mediaPath },
+  });
+  // updatedAt do contato move a conversa pro topo da inbox
+  await prisma.waContact.update({ where: { id: contact.id }, data: { updatedAt: new Date() } });
 }
 
 /**
@@ -177,10 +238,10 @@ export async function processWaEvent(event: ParsedWaEvent, userId: string) {
     }
   }
 
-  // Áudio: salva o arquivo antes de gravar a mensagem
+  // Mídia (áudio, imagem, vídeo, documento, figurinha): salva antes de gravar
   let mediaPath: string | null = null;
-  if (event.msgType === 'audio' && event.mediaBase64) {
-    mediaPath = saveAudioFile(event.mediaBase64, event.waMessageId);
+  if (event.mediaBase64 && MEDIA_TYPES.includes(event.msgType)) {
+    mediaPath = saveMediaFile(event.mediaBase64, event.waMessageId, event.msgType, event.mimetype);
   }
 
   const message = await prisma.waMessage.create({
@@ -194,10 +255,21 @@ export async function processWaEvent(event: ParsedWaEvent, userId: string) {
     },
   });
 
-  // Transcrição assíncrona — não bloqueia o fluxo do webhook
-  if (mediaPath) {
-    transcribeAudioFile(message.id, mediaPath).catch((err) =>
-      console.error('[WA] Transcrição falhou:', err?.message || err)
-    );
+  // Áudio vira texto, imagem vira descrição — assíncrono, não segura o webhook.
+  // Só o que chega da cliente: descrever/transcrever o que nós mandamos é gastar à toa.
+  if (mediaPath && !event.isFromMe) {
+    if (event.msgType === 'audio') {
+      transcribeAudioFile(message.id, mediaPath).catch((err) =>
+        console.error('[WA] Transcrição falhou:', err?.message || err)
+      );
+    } else if (event.msgType === 'image') {
+      describeImageFile(message.id, mediaPath).catch((err) =>
+        console.error('[WA] Descrição de imagem falhou:', err?.message || err)
+      );
+    }
   }
+
+  // Quem decide o que fazer com a mensagem é o chamador (evita ciclo de import
+  // waService → waOffHours → waAuto → waService).
+  return { contactId: contact.id, isIncoming: !event.isFromMe };
 }

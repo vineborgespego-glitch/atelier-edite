@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Scissors, Users, Settings, ChevronLeft, ChevronRight, Archive } from 'lucide-react';
+import { LayoutDashboard, Scissors, Users, Settings, ChevronLeft, ChevronRight, Archive, MessageCircle } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
     { to: '/app/orders', label: 'Pedidos', icon: Scissors },
     { to: '/app/orders/history', label: 'Histórico', icon: Archive },
     { to: '/app/clients', label: 'Clientes', icon: Users },
+    { to: '/app/whatsapp', label: 'WhatsApp', icon: MessageCircle },
     { to: '/app/admin', label: 'Ajustes', icon: Settings },
   ];
 

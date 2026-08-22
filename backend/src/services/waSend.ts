@@ -1,10 +1,9 @@
 /**
- * Envio de mensagens de texto pela Evolution GO.
- * Formato descoberto em teste real (difere da doc "padrão"):
- *   POST {EVOLUTION_URL}/send/text
+ * Envio pela Evolution API v2 (Baileys).
+ *   POST {EVOLUTION_URL}/message/{rota}/{INSTANCE_NAME}
  *   Header: apikey: {TOKEN_DA_INSTANCIA}   (não é "token" nem Bearer)
- *   Body:   { "number": "5541999998888", "text": "mensagem" }
- * Erro pode vir como { "error": "..." } mesmo com HTTP 200 — checar o corpo.
+ * O check de `{ error }` no corpo é herança da Evolution GO (que devolvia erro
+ * com HTTP 200). Custa nada e cobre gateway intermediário — mantido.
  */
 
 export interface SendTextResult {
@@ -13,30 +12,28 @@ export interface SendTextResult {
   data?: any;
 }
 
-export async function sendText(number: string, text: string): Promise<SendTextResult> {
+/** Mídia grande vira base64 gordo — 60s aqui, contra os 30s do texto. */
+const TIMEOUT_TEXTO = 30000;
+const TIMEOUT_MIDIA = 60000;
+
+async function post(rota: string, body: any, timeoutMs: number): Promise<SendTextResult> {
   const baseUrl = process.env.EVOLUTION_URL;
   const token = process.env.INSTANCE_TOKEN;
+  const instance = process.env.INSTANCE_NAME;
 
-  if (!baseUrl || !token) {
-    return { ok: false, error: 'EVOLUTION_URL/INSTANCE_TOKEN não configurados' };
-  }
-
-  const cleanNumber = number.replace(/\D/g, '');
-  if (cleanNumber.length < 10) {
-    return { ok: false, error: `Número inválido: ${number}` };
+  if (!baseUrl || !token || !instance) {
+    return { ok: false, error: 'EVOLUTION_URL/INSTANCE_TOKEN/INSTANCE_NAME não configurados' };
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(`${baseUrl.replace(/\/$/, '')}/send/text`, {
+    const url = `${baseUrl.replace(/\/$/, '')}/message/${rota}/${encodeURIComponent(instance)}`;
+    const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: token,
-      },
-      body: JSON.stringify({ number: cleanNumber, text }),
+      headers: { 'Content-Type': 'application/json', apikey: token },
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
 
@@ -47,9 +44,9 @@ export async function sendText(number: string, text: string): Promise<SendTextRe
       // corpo não-JSON
     }
 
-    // A Evolution GO pode devolver erro no corpo mesmo com HTTP 200
     if (!res.ok || (json && json.error)) {
-      return { ok: false, error: json?.error || `HTTP ${res.status}`, data: json };
+      const detail = json?.response?.message || json?.error || json?.message;
+      return { ok: false, error: detail ? JSON.stringify(detail) : `HTTP ${res.status}`, data: json };
     }
 
     return { ok: true, data: json };
@@ -58,4 +55,53 @@ export async function sendText(number: string, text: string): Promise<SendTextRe
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/** Só dígitos; recusa o que claramente não é telefone antes de gastar request. */
+function normalizeNumber(number: string): string | null {
+  const clean = (number || '').replace(/\D/g, '');
+  return clean.length >= 10 ? clean : null;
+}
+
+export async function sendText(number: string, text: string): Promise<SendTextResult> {
+  const cleanNumber = normalizeNumber(number);
+  if (!cleanNumber) return { ok: false, error: `Número inválido: ${number}` };
+
+  return post('sendText', { number: cleanNumber, text }, TIMEOUT_TEXTO);
+}
+
+export type MediaType = 'image' | 'video' | 'document';
+
+/** Imagem, vídeo ou documento. `media` é base64 puro (sem data:) ou uma URL. */
+export async function sendMedia(
+  number: string,
+  media: string,
+  opts: { mediatype: MediaType; mimetype: string; fileName?: string; caption?: string }
+): Promise<SendTextResult> {
+  const cleanNumber = normalizeNumber(number);
+  if (!cleanNumber) return { ok: false, error: `Número inválido: ${number}` };
+
+  return post(
+    'sendMedia',
+    {
+      number: cleanNumber,
+      mediatype: opts.mediatype,
+      mimetype: opts.mimetype,
+      media,
+      fileName: opts.fileName || 'arquivo',
+      caption: opts.caption || '',
+    },
+    TIMEOUT_MIDIA
+  );
+}
+
+/**
+ * Áudio como mensagem de voz (aquele balãozinho com onda).
+ * Rota própria na Evolution — sendMedia mandaria como arquivo anexado.
+ */
+export async function sendAudio(number: string, audioBase64: string): Promise<SendTextResult> {
+  const cleanNumber = normalizeNumber(number);
+  if (!cleanNumber) return { ok: false, error: `Número inválido: ${number}` };
+
+  return post('sendWhatsAppAudio', { number: cleanNumber, audio: audioBase64 }, TIMEOUT_MIDIA);
 }

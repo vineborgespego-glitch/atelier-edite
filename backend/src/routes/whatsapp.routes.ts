@@ -1,11 +1,18 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import { authenticate, AuthRequest } from '../middlewares/auth';
 import { prisma } from '../lib/prisma';
 import { parseWebhookEvent } from '../lib/waParser';
-import { processWaEvent } from '../services/waService';
-import { sendText } from '../services/waSend';
+import { processWaEvent, recordOutgoing, saveMediaBuffer } from '../services/waService';
+import { sendText, sendMedia, sendAudio, MediaType } from '../services/waSend';
+import { replyIfOffHours } from '../services/waOffHours';
 
 const router = Router();
+
+// Arquivo em memória: vai virar base64 pra Evolution de qualquer jeito.
+// Teto do WhatsApp para mídia comum é 16MB; documento vai até 100MB, mas
+// aí o base64 estoura o payload — 16MB cobre o uso real do atelier.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 16 * 1024 * 1024 } });
 
 // ── Debug: ring buffer dos últimos payloads recebidos ───────────────────────
 const DEBUG_BUFFER_SIZE = 20;
@@ -76,7 +83,14 @@ async function webhookHandler(req: Request, res: Response) {
         return;
       }
 
-      await processWaEvent(event, userId);
+      const saved = await processWaEvent(event, userId);
+
+      // Fora do horário: responde para o cliente não ficar no vácuo.
+      // Só com telefone real — LID não dá para enviar.
+      if (saved?.isIncoming && event.phone) {
+        await replyIfOffHours(userId, saved.contactId, event.phone);
+      }
+
       pushDebug({
         path: req.path,
         accepted: true,
@@ -123,6 +137,45 @@ router.post('/send', authenticate, async (req: AuthRequest, res: Response) => {
 
   const result = await sendText(number, text);
   if (!result.ok) return res.status(502).json({ error: result.error });
+
+  await recordOutgoing(req.userId!, number, text).catch((err) =>
+    console.error('[WA] Enviado mas não registrado:', err?.message || err)
+  );
+  return res.json({ ok: true, data: result.data });
+});
+
+// POST /api/whatsapp/send-media — envia foto, vídeo, PDF ou áudio (multipart)
+router.post('/send-media', authenticate, upload.single('file'), async (req: AuthRequest, res: Response) => {
+  const { number, caption } = req.body || {};
+  const file = req.file;
+  if (!number || !file) return res.status(400).json({ error: 'number e file são obrigatórios' });
+
+  const mimetype = file.mimetype || 'application/octet-stream';
+  const base64 = file.buffer.toString('base64');
+  const [tipo] = mimetype.split('/');
+
+  // Áudio vai pela rota de mensagem de voz; o resto como mídia comum.
+  const result =
+    tipo === 'audio'
+      ? await sendAudio(number, base64)
+      : await sendMedia(number, base64, {
+          mediatype: tipo === 'image' || tipo === 'video' ? (tipo as MediaType) : 'document',
+          mimetype,
+          fileName: file.originalname,
+          caption,
+        });
+
+  if (!result.ok) return res.status(502).json({ error: result.error });
+
+  // Só grava histórico depois de entregue — assim a inbox nunca mostra o que não saiu.
+  const msgType = tipo === 'audio' ? 'audio' : tipo === 'image' ? 'image' : tipo === 'video' ? 'video' : 'document';
+  const mediaPath = saveMediaBuffer(file.buffer, file.originalname, msgType, mimetype);
+  const content = caption?.trim() || `[${msgType === 'document' ? `documento: ${file.originalname}` : msgType}]`;
+
+  await recordOutgoing(req.userId!, number, content, msgType, mediaPath).catch((err) =>
+    console.error('[WA] Enviado mas não registrado:', err?.message || err)
+  );
+
   return res.json({ ok: true, data: result.data });
 });
 

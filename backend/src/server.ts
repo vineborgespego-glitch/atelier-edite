@@ -4,7 +4,9 @@ if (process.env.NODE_ENV !== 'production') {
 import app from './app';
 import { prisma } from './lib/prisma';
 import { runAutoArchive } from './services/autoArchive';
+import { runPostSale } from './services/postSale';
 import { startTranscriptionWorker } from './services/waTranscription';
+import { startVisionWorker } from './services/waVision';
 
 // Capturar erros globais para diagnóstico
 process.on('uncaughtException', (err) => {
@@ -65,17 +67,23 @@ async function main() {
         process.exit(0);
       });
 
-      // Delay initial run by 1 minute to allow server to stabilize
+      // Delay initial run by 1 minute to allow server to stabilize.
+      // Pós-venda ANTES do auto-archive: o archive tira o pedido de DELIVERED.
+      const dailyJobs = async () => {
+        await runPostSale();
+        await runAutoArchive();
+      };
       setTimeout(() => {
-        console.log('🤖 Starting initial auto-archive pass...');
-        runAutoArchive();
+        console.log('🤖 Starting initial daily jobs pass...');
+        dailyJobs();
       }, 60000);
 
       // Schedule every 24h
-      setInterval(runAutoArchive, 24 * 60 * 60 * 1000);
+      setInterval(dailyJobs, 24 * 60 * 60 * 1000);
 
-      // Retry de transcrições de áudio pendentes (WhatsApp)
+      // Retry de áudios sem transcrição e imagens sem descrição (WhatsApp)
       startTranscriptionWorker();
+      startVisionWorker();
   } catch (error: any) {
     console.error('❌ CRITICAL ERROR: Failed to start server');
     console.error('--- Error Details ---');

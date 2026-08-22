@@ -112,6 +112,7 @@ model Order {
   notes            String?
   dueDate          DateTime?
   deliveredAt      DateTime?
+  postSaleSentAt   DateTime?
   paidAt           DateTime?
   totalAmount      Decimal        @default(0) @db.Decimal(10, 2)
   deposit          Decimal        @default(0) @db.Decimal(10, 2)
