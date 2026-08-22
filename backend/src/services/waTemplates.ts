@@ -59,6 +59,21 @@ export function postSaleTemplate(order: TemplateOrder, clientName?: string | nul
   );
 }
 
+export function birthdayTemplate(clientName?: string | null): string {
+  return (
+    `Oi ${firstName(clientName)}, feliz aniversário! Todo mundo aqui do ${ATELIER} ` +
+    `deseja um dia lindo para você. Obrigada por confiar no nosso trabalho.`
+  );
+}
+
+export function reactivationTemplate(clientName?: string | null): string {
+  return (
+    `Oi ${firstName(clientName)}, aqui é a Edite. Faz um tempinho que a gente não se fala ` +
+    `e fiquei com saudade. Se precisar de algum ajuste ou tiver uma peça em mente, ` +
+    `é só me chamar por aqui que a gente dá um jeito.`
+  );
+}
+
 export const OFF_HOURS_TEXT =
   `Oi! Aqui é o ${ATELIER}. Recebi sua mensagem, mas estamos fora do horário de atendimento agora. ` +
   `Respondo assim que abrirmos (segunda a sexta das 9h às 18h, sábado das 9h às 13h). ` +

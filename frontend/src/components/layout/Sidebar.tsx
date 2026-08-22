@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Scissors, Users, Settings, ChevronLeft, ChevronRight, Archive, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LayoutDashboard, Scissors, Users, Settings, ChevronLeft, ChevronRight, Archive, MessageCircle, Send } from 'lucide-react';
+import api from '../../services/api';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,12 +12,26 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
   const location = useLocation();
 
+  // Quantas mensagens esperam aprovação — sem isso a Maria não sabe que tem fila.
+  const [pendentes, setPendentes] = useState(0);
+  useEffect(() => {
+    const carregar = () =>
+      api
+        .get('/whatsapp/outbox')
+        .then((r) => setPendentes(r.data.items?.length || 0))
+        .catch(() => {}); // menu não é lugar de mostrar erro de rede
+    carregar();
+    const t = setInterval(carregar, 60000);
+    return () => clearInterval(t);
+  }, []);
+
   const links = [
     { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/app/orders', label: 'Pedidos', icon: Scissors },
     { to: '/app/orders/history', label: 'Histórico', icon: Archive },
     { to: '/app/clients', label: 'Clientes', icon: Users },
     { to: '/app/whatsapp', label: 'WhatsApp', icon: MessageCircle },
+    { to: '/app/a-enviar', label: 'A enviar', icon: Send, badge: pendentes },
     { to: '/app/admin', label: 'Ajustes', icon: Settings },
   ];
 
@@ -49,7 +65,7 @@ export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
               key={link.to}
               to={link.to}
               onClick={() => isMobile && toggle()} // Close on click if mobile
-              className={`flex items-center py-3 px-3 rounded-xl transition-all duration-200 group
+              className={`relative flex items-center py-3 px-3 rounded-xl transition-all duration-200 group
                 ${isActive 
                   ? 'bg-blush/50 text-rosegold font-medium' 
                   : 'text-mauve hover:bg-cream hover:text-rosegold'
@@ -59,6 +75,14 @@ export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
             >
               <Icon size={22} className={isActive ? 'text-rosegold' : 'text-mauve group-hover:text-rosegold'} />
               {isOpen && <span className="ml-3 text-sm">{link.label}</span>}
+              {!!link.badge && (
+                <span
+                  className={`text-[10px] font-medium bg-rosegold text-white rounded-full px-1.5 py-0.5 ${isOpen ? 'ml-auto' : 'absolute -top-1 -right-1'}`}
+                  title={`${link.badge} mensagem(ns) esperando aprovação`}
+                >
+                  {link.badge}
+                </span>
+              )}
             </Link>
           );
         })}

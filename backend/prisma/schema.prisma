@@ -46,6 +46,7 @@ model Client {
   notifications Notification[]
   orders        Order[]
   waContacts    WaContact[]
+  outbox        WaOutbox[]
 
   @@map("clients")
 }
@@ -99,6 +100,31 @@ model WaBlocklist {
 enum WaDirection {
   IN
   OUT
+}
+
+/// Fila de aprovação: nada aqui vai para a cliente sem a Maria liberar.
+/// Aviso de pedido novo e de pedido pronto NÃO passam por aqui — saem direto.
+model WaOutbox {
+  id        String       @id @default(uuid())
+  userId    String
+  clientId  String?
+  phone     String
+  content   String
+  msgType   String
+  status    OutboxStatus @default(PENDING)
+  error     String?
+  createdAt DateTime     @default(now())
+  sentAt    DateTime?
+  client    Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@map("wa_outbox")
+}
+
+enum OutboxStatus {
+  PENDING
+  SENT
+  REJECTED
 }
 
 model Order {

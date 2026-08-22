@@ -5,6 +5,7 @@ import app from './app';
 import { prisma } from './lib/prisma';
 import { runAutoArchive } from './services/autoArchive';
 import { runPostSale } from './services/postSale';
+import { runBirthdays, runReactivation } from './services/relationship';
 import { startTranscriptionWorker } from './services/waTranscription';
 import { startVisionWorker } from './services/waVision';
 
@@ -71,6 +72,8 @@ async function main() {
       // Pós-venda ANTES do auto-archive: o archive tira o pedido de DELIVERED.
       const dailyJobs = async () => {
         await runPostSale();
+        await runBirthdays();
+        await runReactivation();
         await runAutoArchive();
       };
       setTimeout(() => {

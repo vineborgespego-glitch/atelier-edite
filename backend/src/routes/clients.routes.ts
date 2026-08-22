@@ -122,7 +122,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       phone,
       cpfCnpj,
       address,
-      birthDate: birthDate ? new Date(birthDate) : undefined,
+      // null limpa a data; undefined (campo ausente no body) mantém a atual
+      birthDate: birthDate === undefined ? undefined : birthDate ? new Date(birthDate) : null,
       notes,
       measures: measures || existing.measures,
     },

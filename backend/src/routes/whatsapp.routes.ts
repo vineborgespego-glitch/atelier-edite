@@ -6,6 +6,7 @@ import { parseWebhookEvent } from '../lib/waParser';
 import { processWaEvent, recordOutgoing, saveMediaBuffer } from '../services/waService';
 import { sendText, sendMedia, sendAudio, MediaType } from '../services/waSend';
 import { replyIfOffHours } from '../services/waOffHours';
+import { approveAndSend, reject, approveManyInBackground } from '../services/waOutbox';
 
 const router = Router();
 
@@ -177,6 +178,41 @@ router.post('/send-media', authenticate, upload.single('file'), async (req: Auth
   );
 
   return res.json({ ok: true, data: result.data });
+});
+
+// ── Fila de aprovação ───────────────────────────────────────────────────────
+
+// GET /api/whatsapp/outbox — o que está esperando a Maria liberar
+router.get('/outbox', authenticate, async (req: AuthRequest, res: Response) => {
+  const items = await prisma.waOutbox.findMany({
+    where: { userId: req.userId, status: 'PENDING' },
+    orderBy: { createdAt: 'asc' },
+    include: { client: { select: { id: true, name: true } } },
+  });
+  return res.json({ items });
+});
+
+// POST /api/whatsapp/outbox/:id/approve — envia (com o texto editado, se houver)
+router.post('/outbox/:id/approve', authenticate, async (req: AuthRequest, res: Response) => {
+  const result = await approveAndSend(req.userId!, req.params.id, req.body?.content);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  return res.json({ ok: true });
+});
+
+// POST /api/whatsapp/outbox/:id/reject — descarta sem enviar
+router.post('/outbox/:id/reject', authenticate, async (req: AuthRequest, res: Response) => {
+  const result = await reject(req.userId!, req.params.id);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  return res.json({ ok: true });
+});
+
+// POST /api/whatsapp/outbox/approve-all — aprova vários; envio sai espaçado em background
+router.post('/outbox/approve-all', authenticate, async (req: AuthRequest, res: Response) => {
+  const ids: string[] = Array.isArray(req.body?.ids) ? req.body.ids : [];
+  if (!ids.length) return res.status(400).json({ error: 'Nenhuma mensagem selecionada' });
+
+  approveManyInBackground(req.userId!, ids);
+  return res.json({ ok: true, queued: ids.length });
 });
 
 // GET /api/whatsapp/contacts — contatos com última mensagem (base pra fase 2)

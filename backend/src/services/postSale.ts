@@ -1,6 +1,6 @@
 import { subDays } from 'date-fns';
 import { prisma } from '../lib/prisma';
-import { sendAuto } from './waAuto';
+import { queueMessage } from './waOutbox';
 import { postSaleTemplate } from './waTemplates';
 
 /**
@@ -28,11 +28,10 @@ export async function runPostSale() {
         continue;
       }
       const text = postSaleTemplate(order, order.client.name);
-      const ok = await sendAuto(order.userId, order.client.phone, text, 'auto_postsale');
-      // Falhou? deixa null e tenta de novo no próximo ciclo.
-      if (ok) {
-        await prisma.order.update({ where: { id: order.id }, data: { postSaleSentAt: new Date() } });
-      }
+      await queueMessage(order.userId, order.client.phone, text, 'auto_postsale', order.clientId);
+      // Marca ao ENFILEIRAR, não ao enviar: senão o job reenfileira a mesma
+      // cliente todo dia enquanto ela espera a aprovação da Maria.
+      await prisma.order.update({ where: { id: order.id }, data: { postSaleSentAt: new Date() } });
     }
 
     if (orders.length) console.log(`[PostSale] ${orders.length} pedido(s) processado(s).`);

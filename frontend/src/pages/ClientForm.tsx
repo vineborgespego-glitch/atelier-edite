@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
-import { User, Phone, Check, AlertCircle } from 'lucide-react';
+import { User, Phone, Check, AlertCircle, Cake } from 'lucide-react';
 
 // Deixa a primeira letra de cada palavra do nome em maiúscula enquanto digita
 function capitalizeName(value: string) {
@@ -17,6 +17,7 @@ export default function ClientForm() {
   const isEdit = !!id;
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [existingClients, setExistingClients] = useState<any[]>([]);
@@ -43,6 +44,8 @@ export default function ClientForm() {
         const client = response.data.client;
         setName(client.name || '');
         setPhone(client.phone || '');
+        // ISO do banco → yyyy-MM-dd que o input date espera
+        setBirthDate(client.birthDate ? String(client.birthDate).slice(0, 10) : '');
       } catch (err) {
         console.error('Error loading client:', err);
         setError('Não foi possível carregar os dados do cliente.');
@@ -81,10 +84,12 @@ export default function ClientForm() {
     setError('');
 
     try {
+      // Meio-dia UTC: salvar 00:00 faz o dia "voltar" um no fuso de São Paulo.
+      const payload = { name, phone, birthDate: birthDate ? `${birthDate}T12:00:00.000Z` : null };
       if (isEdit) {
-        await api.put(`/clients/${id}`, { name, phone });
+        await api.put(`/clients/${id}`, payload);
       } else {
-        await api.post('/clients', { name, phone });
+        await api.post('/clients', payload);
       }
       navigate('/app/clients');
     } catch (err: any) {
@@ -142,6 +147,22 @@ export default function ClientForm() {
               />
               {isDuplicate && <AlertCircle className="absolute right-4 text-red-500 animate-pulse" size={20} />}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-white/90 text-sm ml-2 font-medium">Aniversário (opcional)</label>
+            <div className="relative flex items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.3)] border border-white/60 focus-within:ring-4 focus-within:ring-white/30">
+              <Cake className="absolute left-4 text-mauve" size={20} />
+              <input
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                className="w-full bg-transparent p-4 pl-12 pr-12 text-dark focus:outline-none"
+              />
+            </div>
+            <p className="text-white/70 text-xs ml-2">
+              Fica guardado para usar quando você quiser. Nenhuma mensagem de aniversário é enviada por enquanto.
+            </p>
           </div>
 
           <div className="w-full mt-8 pt-4">
