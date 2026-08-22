@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { Send, Loader2, Check, X, Pencil, Inbox } from 'lucide-react';
 
@@ -25,6 +25,20 @@ export default function Outbox() {
   const [editando, setEditando] = useState<string | null>(null);
   const [texto, setTexto] = useState('');
   const [enviandoLote, setEnviandoLote] = useState(false);
+  const [filtro, setFiltro] = useState('todas');
+
+  // Filtra na tela: a fila de um ateliê cabe numa requisição só.
+  const visiveis = useMemo(
+    () => (filtro === 'todas' ? items : items.filter((i) => i.msgType === filtro)),
+    [items, filtro]
+  );
+
+  // Só mostra aba de tipo que realmente tem mensagem esperando.
+  const abas = useMemo(() => {
+    const contagem = new Map<string, number>();
+    for (const i of items) contagem.set(i.msgType, (contagem.get(i.msgType) || 0) + 1);
+    return [['todas', items.length] as const, ...contagem.entries()];
+  }, [items]);
 
   const load = async () => {
     try {
@@ -73,10 +87,11 @@ export default function Outbox() {
   };
 
   const aprovarTudo = async () => {
-    if (!window.confirm(`Enviar as ${items.length} mensagens? Elas saem uma a cada 40 segundos.`)) return;
+    // Envia o que está à vista: com filtro ativo, "todas" seria uma surpresa ruim.
+    if (!window.confirm(`Enviar as ${visiveis.length} mensagens? Elas saem uma a cada 40 segundos.`)) return;
     setEnviandoLote(true);
     try {
-      await api.post('/whatsapp/outbox/approve-all', { ids: items.map((i) => i.id) });
+      await api.post('/whatsapp/outbox/approve-all', { ids: visiveis.map((i) => i.id) });
     } catch (error: any) {
       alert(`Erro: ${error.response?.data?.error || error.message}`);
     }
@@ -93,7 +108,7 @@ export default function Outbox() {
             Nada aqui foi enviado ainda. Avisos de pedido novo e de pedido pronto saem sozinhos e não aparecem nesta lista.
           </p>
         </div>
-        {items.length > 1 && (
+        {visiveis.length > 1 && (
           <button
             onClick={aprovarTudo}
             disabled={enviandoLote}
@@ -105,6 +120,24 @@ export default function Outbox() {
         )}
       </header>
 
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {abas.map(([tipo, n]) => (
+            <button
+              key={tipo}
+              onClick={() => setFiltro(tipo as string)}
+              className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                filtro === tipo
+                  ? 'bg-rosegold text-white border-rosegold'
+                  : 'bg-white text-mauve border-[#F5E6E8] hover:border-rosegold'
+              }`}
+            >
+              {tipo === 'todas' ? 'Todas' : ROTULO[tipo as string] || tipo} ({n})
+            </button>
+          ))}
+        </div>
+      )}
+
       {enviandoLote && (
         <div className="mb-4 rounded-xl bg-blush/40 border border-[#F5E6E8] px-4 py-3 text-sm text-dark">
           Enviando uma a cada 40 segundos para o WhatsApp não bloquear o número. Pode fechar a tela, o envio continua.
@@ -115,14 +148,14 @@ export default function Outbox() {
         <div className="coquette-card p-8 text-center text-mauve">
           <Loader2 className="animate-spin mx-auto" size={20} />
         </div>
-      ) : items.length === 0 ? (
+      ) : visiveis.length === 0 ? (
         <div className="coquette-card p-10 text-center text-mauve">
           <Inbox size={28} className="mx-auto mb-2 opacity-50" />
           Nenhuma mensagem esperando aprovação.
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => (
+          {visiveis.map((item) => (
             <div key={item.id} className="coquette-card p-4">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="min-w-0">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import api from '../services/api';
 import { MessageCircle, Send, Loader2, AlertCircle, Paperclip, Mic, Square } from 'lucide-react';
 
@@ -39,6 +39,10 @@ function formatHora(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
+function formatDia(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
 function nomeContato(c: WaContact): string {
   return c.client?.name || c.name || c.phone;
 }
@@ -68,6 +72,62 @@ function Midia({ m }: { m: WaMessage }) {
   );
 }
 
+// Palavras sem valor de assunto. Só precisa cobrir 4+ letras: o regex abaixo
+// já descarta as curtas ("de", "com", "que").
+const VAZIAS = new Set([
+  'para','como','mais','muito','voce','esta','estou','isso','aqui','também','tambem',
+  'obrigada','obrigado','tudo','bem','pode','posso','fazer','tenho','quero','ficou',
+  'entao','então','depois','ainda','agora','quando','porque','sobre','pelo','pela',
+  'minha','meu','sua','seu','dela','dele','nao','sim','oi','ola','olá','vou','vai',
+  'ser','sao','são','tem','tinha','seria','fica','ficar','coisa','gente','dia','dias',
+]);
+
+/**
+ * Resumo da conversa sem IA: conta mensagens, acha valores e datas citados e
+ * levanta os termos que mais se repetem. Roda sobre o histórico que já veio
+ * da API — nenhuma chamada nova, nenhum custo por conversa.
+ */
+export function resumirConversa(messages: WaMessage[]) {
+  if (!messages.length) return null;
+
+  // Os marcadores de mídia ("[imagem]", "[áudio 3s]") não são assunto.
+  const texto = messages
+    .map((m) => `${m.content} ${m.transcription || ''}`)
+    .join(' ')
+    .replace(/\[[^\]]*\]/g, ' ');
+
+  const unicos = (re: RegExp) => [...new Set(texto.match(re) || [])];
+  const valores = unicos(/R\$ ?\d[\d.,]*/gi).slice(0, 4);
+  const datas = unicos(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g).slice(0, 3);
+
+  const freq = new Map<string, number>();
+  const palavras =
+    texto
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .match(/[a-z]{4,}/g) || [];
+  for (const p of palavras) {
+    if (VAZIAS.has(p)) continue;
+    freq.set(p, (freq.get(p) || 0) + 1);
+  }
+  const termos = [...freq.entries()]
+    .filter(([, n]) => n > 1)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([p]) => p);
+
+  return {
+    total: messages.length,
+    doCliente: messages.filter((m) => m.direction === 'IN').length,
+    inicio: messages[0].createdAt,
+    fim: messages[messages.length - 1].createdAt,
+    valores,
+    datas,
+    termos,
+  };
+}
+
 export default function WhatsAppInbox() {
   const [contacts, setContacts] = useState<WaContact[]>([]);
   const [selected, setSelected] = useState<WaContact | null>(null);
@@ -79,6 +139,7 @@ export default function WhatsAppInbox() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [gravando, setGravando] = useState(false);
   const recRef = useRef<MediaRecorder | null>(null);
+  const resumo = useMemo(() => resumirConversa(messages), [messages]);
 
   const loadContacts = async () => {
     try {
@@ -253,14 +314,40 @@ export default function WhatsAppInbox() {
               <div className="px-4 py-3 border-b border-[#F5E6E8]">
                 <p className="font-medium text-dark text-sm">{nomeContato(selected)}</p>
                 <p className="text-xs text-mauve">{selected.phone}</p>
+
+                {resumo && (
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-mauve">
+                    <span>
+                      {resumo.total} mensagens · {resumo.doCliente} dela · {formatDia(resumo.inicio)} a{' '}
+                      {formatDia(resumo.fim)}
+                    </span>
+                    {resumo.termos.length > 0 && (
+                      <span className="flex flex-wrap gap-1">
+                        {resumo.termos.map((t) => (
+                          <span key={t} className="bg-blush/70 text-rosegold rounded-full px-2 py-0.5">
+                            {t}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                    {resumo.valores.map((v) => (
+                      <span key={v} className="font-medium text-dark">
+                        {v}
+                      </span>
+                    ))}
+                    {resumo.datas.map((d) => (
+                      <span key={d}>prazo? {d}</span>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-[300px]">
+              <div className="wa-canvas flex-1 overflow-y-auto p-4 space-y-2 min-h-[300px]">
                 {messages.map((m) => (
                   <div key={m.id} className={`flex ${m.direction === 'OUT' ? 'justify-end' : 'justify-start'}`}>
                     <div
                       className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
-                        m.direction === 'OUT' ? 'bg-blush/60 text-dark' : 'bg-cream text-dark'
+                        m.direction === 'OUT' ? 'bg-blush text-dark shadow-sm' : 'bg-white text-dark shadow-sm'
                       }`}
                     >
                       <Midia m={m} />

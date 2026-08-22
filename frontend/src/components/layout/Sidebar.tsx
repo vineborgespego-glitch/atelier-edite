@@ -1,29 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { LayoutDashboard, Scissors, Users, Settings, ChevronLeft, ChevronRight, Archive, MessageCircle, Send } from 'lucide-react';
-import api from '../../services/api';
 
 interface SidebarProps {
   isOpen: boolean;
   toggle: () => void;
   isMobile?: boolean;
+  pendentes: number;
 }
 
-export default function Sidebar({ isOpen, toggle, isMobile }: SidebarProps) {
+export default function Sidebar({ isOpen, toggle, isMobile, pendentes }: SidebarProps) {
   const location = useLocation();
 
-  // Quantas mensagens esperam aprovação — sem isso a Maria não sabe que tem fila.
-  const [pendentes, setPendentes] = useState(0);
-  useEffect(() => {
-    const carregar = () =>
-      api
-        .get('/whatsapp/outbox')
-        .then((r) => setPendentes(r.data.items?.length || 0))
-        .catch(() => {}); // menu não é lugar de mostrar erro de rede
-    carregar();
-    const t = setInterval(carregar, 60000);
-    return () => clearInterval(t);
-  }, []);
 
   const links = [
     { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },

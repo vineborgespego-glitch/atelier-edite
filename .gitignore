@@ -41,3 +41,6 @@ npm-debug.log*
 # Database
 prisma/dev.db
 prisma/dev.db-journal
+
+# artefatos de build — nunca versionar
+*.zip
