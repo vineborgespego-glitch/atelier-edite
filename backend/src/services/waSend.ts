@@ -1,6 +1,7 @@
 /**
  * Envio pela Evolution API v2 (Baileys).
- *   POST {EVOLUTION_URL}/message/{rota}/{INSTANCE_NAME}
+ *   POST {EVOLUTION_URL}/{rota}/{INSTANCE_NAME}
+ *   ex: message/sendText, chat/getBase64FromMediaMessage
  *   Header: apikey: {TOKEN_DA_INSTANCIA}   (não é "token" nem Bearer)
  * O check de `{ error }` no corpo é herança da Evolution GO (que devolvia erro
  * com HTTP 200). Custa nada e cobre gateway intermediário — mantido.
@@ -29,7 +30,7 @@ async function post(rota: string, body: any, timeoutMs: number): Promise<SendTex
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const url = `${baseUrl.replace(/\/$/, '')}/message/${rota}/${encodeURIComponent(instance)}`;
+    const url = `${baseUrl.replace(/\/$/, '')}/${rota}/${encodeURIComponent(instance)}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: token },
@@ -67,7 +68,7 @@ export async function sendText(number: string, text: string): Promise<SendTextRe
   const cleanNumber = normalizeNumber(number);
   if (!cleanNumber) return { ok: false, error: `Número inválido: ${number}` };
 
-  return post('sendText', { number: cleanNumber, text }, TIMEOUT_TEXTO);
+  return post('message/sendText', { number: cleanNumber, text }, TIMEOUT_TEXTO);
 }
 
 export type MediaType = 'image' | 'video' | 'document';
@@ -82,7 +83,7 @@ export async function sendMedia(
   if (!cleanNumber) return { ok: false, error: `Número inválido: ${number}` };
 
   return post(
-    'sendMedia',
+    'message/sendMedia',
     {
       number: cleanNumber,
       mediatype: opts.mediatype,
@@ -103,5 +104,23 @@ export async function sendAudio(number: string, audioBase64: string): Promise<Se
   const cleanNumber = normalizeNumber(number);
   if (!cleanNumber) return { ok: false, error: `Número inválido: ${number}` };
 
-  return post('sendWhatsAppAudio', { number: cleanNumber, audio: audioBase64 }, TIMEOUT_MIDIA);
+  return post('message/sendWhatsAppAudio', { number: cleanNumber, audio: audioBase64 }, TIMEOUT_MIDIA);
+}
+
+/**
+ * Busca os bytes de uma mídia recebida. O webhook só traz base64 quando
+ * WEBHOOK_BASE64 está ligado na Evolution — e nem toda versão respeita o
+ * flag por instância. Aqui a mídia é pedida sob demanda, sem depender dele.
+ */
+export async function fetchMediaBase64(key: {
+  remoteJid: string;
+  id: string;
+  fromMe: boolean;
+}): Promise<string | null> {
+  const res = await post('chat/getBase64FromMediaMessage', { message: { key } }, TIMEOUT_MIDIA);
+  if (!res.ok) {
+    console.error('[WA] Falha ao buscar mídia da Evolution:', res.error);
+    return null;
+  }
+  return res.data?.base64 || null;
 }

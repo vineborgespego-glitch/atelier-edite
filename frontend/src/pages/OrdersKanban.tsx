@@ -93,7 +93,6 @@ export default function OrdersKanban() {
 
     const nextVisualStatus = statusOrder[currentIndex + 1];
     const backendStatus = VISUAL_TO_BACKEND[nextVisualStatus];
-    const order = orders.find(o => o.id === orderId);
 
     try {
       await api.patch(`/orders/${orderId}/status`, { status: backendStatus });
