@@ -40,6 +40,8 @@ model Client {
   birthDate     DateTime?
   notes         String?
   measures      Json?
+  /// Arquivada: some das listas e das mensagens automáticas, mas nada é apagado.
+  archivedAt    DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -48,6 +50,7 @@ model Client {
   waContacts    WaContact[]
   outbox        WaOutbox[]
 
+  @@index([userId, archivedAt])
   @@map("clients")
 }
 

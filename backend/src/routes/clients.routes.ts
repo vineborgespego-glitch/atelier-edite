@@ -8,10 +8,14 @@ router.use(authenticate);
 
 // GET /api/clients
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const { search, page = '1', limit = '20' } = req.query as Record<string, string>;
+  const { search, page = '1', limit = '20', archived = 'false' } = req.query as Record<string, string>;
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
-  const where: Record<string, unknown> = { userId: req.userId };
+  // Por padrão a lista mostra só as ativas; ?archived=true mostra só as arquivadas.
+  const where: Record<string, unknown> = {
+    userId: req.userId,
+    archivedAt: archived === 'true' ? { not: null } : null,
+  };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
@@ -66,8 +70,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     // Duplicate check by phone (cleaning numbers for comparison)
     if (phone) {
       const cleanedInput = phone.replace(/\D/g, '');
+      // Arquivada não bloqueia: senão o telefone fica preso para sempre
+      // depois de arquivar um cadastro errado.
       const existingClients = await prisma.client.findMany({
-        where: { userId: req.userId! }
+        where: { userId: req.userId!, archivedAt: null }
       });
 
       const duplicate = existingClients.find(c => 
@@ -152,15 +158,38 @@ router.patch('/:id/measures', async (req: AuthRequest, res: Response) => {
   return res.json({ client });
 });
 
-// DELETE /api/clients/:id
+/**
+ * DELETE /api/clients/:id — ARQUIVA, não apaga.
+ * Apagar de verdade era ruim dos dois lados: com pedidos o banco recusa
+ * (FK RESTRICT) e a Maria via um erro genérico; sem pedidos sumia para sempre
+ * e ainda deixava a conversa de WhatsApp órfã. Arquivar tira das listas e das
+ * mensagens automáticas, e dá para voltar atrás.
+ */
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   const existing = await prisma.client.findFirst({
     where: { id: req.params.id, userId: req.userId },
   });
   if (!existing) return res.status(404).json({ error: 'Cliente não encontrado' });
 
-  await prisma.client.delete({ where: { id: req.params.id } });
-  return res.json({ message: 'Cliente removido com sucesso' });
+  await prisma.client.update({
+    where: { id: req.params.id },
+    data: { archivedAt: new Date() },
+  });
+  return res.json({ message: 'Cliente arquivado' });
+});
+
+// POST /api/clients/:id/restore — desfaz o arquivamento
+router.post('/:id/restore', async (req: AuthRequest, res: Response) => {
+  const existing = await prisma.client.findFirst({
+    where: { id: req.params.id, userId: req.userId },
+  });
+  if (!existing) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+  const client = await prisma.client.update({
+    where: { id: req.params.id },
+    data: { archivedAt: null },
+  });
+  return res.json({ client });
 });
 
 export default router;

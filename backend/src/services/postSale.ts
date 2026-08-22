@@ -22,8 +22,8 @@ export async function runPostSale() {
     });
 
     for (const order of orders) {
-      if (!order.client?.phone) {
-        // Sem telefone nunca vai dar certo — marca para não tentar todo dia.
+      if (!order.client?.phone || order.client.archivedAt) {
+        // Sem telefone (ou cliente arquivada) nunca vai sair — marca para não tentar todo dia.
         await prisma.order.update({ where: { id: order.id }, data: { postSaleSentAt: new Date() } });
         continue;
       }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { Search, ChevronRight, ChevronDown, MessageCircle, Trash2, Pencil, HeartHandshake } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, MessageCircle, Pencil, HeartHandshake, Archive, ArchiveRestore } from 'lucide-react';
 import { format } from 'date-fns';
 
 // Períodos (em dias) para o filtro de clientes inativos / reativação
@@ -38,14 +38,15 @@ export default function ClientsCRM() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'inactive'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'inactive' | 'archived'>('all');
   const [inactiveDays, setInactiveDays] = useState(DEFAULT_INACTIVE_DAYS);
   const [monthsInput, setMonthsInput] = useState('');
 
   useEffect(() => {
     async function loadClients() {
       try {
-        const response = await api.get('/clients?limit=1000');
+        // Arquivadas vêm de uma consulta separada — nunca misturadas com as ativas
+        const response = await api.get(`/clients?limit=1000&archived=${filterMode === 'archived'}`);
         const formatted = response.data.clients.map((c: any) => ({
           id: c.id,
           name: c.name,
@@ -74,17 +75,27 @@ export default function ClientsCRM() {
       }
     }
     loadClients();
-  }, []);
+  }, [filterMode]);
 
-  const handleDeleteClient = async (id: string) => {
-    if (!window.confirm('TEM CERTEZA? Isso excluirá o cliente e TODOS os seus pedidos permanentemente. Esta ação não pode ser desfeita!')) return;
-    
+  const handleArchiveClient = async (id: string, name: string) => {
+    if (!window.confirm(`Arquivar ${name}? Ela sai da lista, mas os pedidos e as conversas ficam guardados. Dá para trazer de volta depois.`)) return;
+
     try {
       await api.delete(`/clients/${id}`);
       setClients(clients.filter(c => c.id !== id));
     } catch (error) {
-      console.error('Error deleting client:', error);
-      alert('Não foi possível excluir o cliente. Verifique se há pedidos ativos que impedem a exclusão ou tente novamente.');
+      console.error('Error archiving client:', error);
+      alert('Não foi possível arquivar o cliente. Tente novamente.');
+    }
+  };
+
+  const handleRestoreClient = async (id: string) => {
+    try {
+      await api.post(`/clients/${id}/restore`);
+      setClients(clients.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Error restoring client:', error);
+      alert('Não foi possível restaurar o cliente. Tente novamente.');
     }
   };
 
@@ -159,7 +170,17 @@ export default function ClientsCRM() {
           >
             <HeartHandshake size={16} />
             Inativos
-            <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${filterMode === 'inactive' ? 'bg-white/25 text-white' : 'bg-blush text-rosegold'}`}>{inactiveCount}</span>
+            {/* Na lista de arquivados a contagem seria sobre outro conjunto — some */}
+            {filterMode !== 'archived' && (
+              <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${filterMode === 'inactive' ? 'bg-white/25 text-white' : 'bg-blush text-rosegold'}`}>{inactiveCount}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setFilterMode('archived')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${filterMode === 'archived' ? 'bg-rosegold text-white shadow-sm' : 'bg-white text-mauve border border-[#F5E6E8] hover:border-rosegold'}`}
+          >
+            <Archive size={16} />
+            Arquivados
           </button>
         </div>
 
@@ -199,6 +220,12 @@ export default function ClientsCRM() {
           </div>
         )}
       </div>
+
+      {filterMode === 'archived' && filteredClients.length === 0 && (
+        <div className="coquette-card p-8 text-center text-mauve">
+          Nenhum cliente arquivado.
+        </div>
+      )}
 
       {filterMode === 'inactive' && filteredClients.length === 0 && (
         <div className="coquette-card p-8 text-center text-mauve">
@@ -241,13 +268,23 @@ export default function ClientsCRM() {
                   <Pencil size={20} />
                 </button>
 
-                <button
-                  onClick={() => handleDeleteClient(client.id)}
-                  className="p-2 bg-red-50 text-red-400 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
-                  title="Excluir Cliente Permanentemente"
-                >
-                  <Trash2 size={20} />
-                </button>
+                {filterMode === 'archived' ? (
+                  <button
+                    onClick={() => handleRestoreClient(client.id)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-blush/60 text-rosegold rounded-full text-sm hover:bg-blush transition-colors"
+                    title="Trazer de volta para a lista"
+                  >
+                    <ArchiveRestore size={18} /> Restaurar
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleArchiveClient(client.id, client.name)}
+                    className="p-2 bg-mauve/10 text-mauve rounded-full hover:bg-mauve/20 hover:text-rosegold transition-colors"
+                    title="Arquivar cliente (nada é apagado)"
+                  >
+                    <Archive size={20} />
+                  </button>
+                )}
 
                 {client.phone && (
                   <a

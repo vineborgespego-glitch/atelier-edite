@@ -35,7 +35,7 @@ export async function runBirthdays(at = new Date()) {
     // Comparar mês/dia direto no Postgres exige SQL cru por causa do timezone.
     // São algumas centenas de clientes, uma vez por dia — filtrar aqui é mais barato que a complexidade.
     const clients = await prisma.client.findMany({
-      where: { birthDate: { not: null }, phone: { not: null } },
+      where: { birthDate: { not: null }, phone: { not: null }, archivedAt: null },
       select: { id: true, userId: true, name: true, phone: true, birthDate: true },
     });
 
@@ -60,7 +60,7 @@ export async function runReactivation(at = new Date()) {
     const limite = new Date(at.getTime() - DIAS_SUMIDA * 86400000);
 
     const clients = await prisma.client.findMany({
-      where: { phone: { not: null } },
+      where: { phone: { not: null }, archivedAt: null },
       select: {
         id: true,
         userId: true,
