@@ -1,7 +1,12 @@
 import { Router, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { authenticate, AuthRequest } from '../middlewares/auth';
 import { prisma } from '../lib/prisma';
 import { generateReceiptPDF } from '../services/pdfReceipt';
+import { sendMedia } from '../services/waSend';
+import { recordOutgoing } from '../services/waService';
+import { receiptCaption } from '../services/waTemplates';
 
 const router = Router();
 router.use(authenticate);
@@ -82,6 +87,48 @@ router.post('/:orderId/generate', async (req: AuthRequest, res: Response) => {
       code: error?.code,
     });
   }
+});
+
+/**
+ * POST /api/receipts/:orderId/send — manda o PDF do recibo pelo WhatsApp.
+ * Antes a Maria baixava o arquivo e anexava na mão pelo wa.me; o recibo já
+ * está em disco e o sendMedia já existe, então é só juntar os dois.
+ */
+router.post('/:orderId/send', async (req: AuthRequest, res: Response) => {
+  const order = await prisma.order.findFirst({
+    where: { id: req.params.orderId, userId: req.userId },
+    include: { client: true, receipt: true },
+  });
+
+  if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+  if (!order.client?.phone) return res.status(400).json({ error: 'Cliente sem telefone cadastrado' });
+  if (!order.receipt?.pdfPath) return res.status(400).json({ error: 'Recibo ainda não foi gerado' });
+
+  // pdfPath vem como "/uploads/arquivo.pdf"
+  const fullPath = path.resolve(process.cwd(), order.receipt.pdfPath.replace(/^\//, ''));
+  if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'Arquivo do recibo não encontrado' });
+
+  const fileName = `recibo-${order.receipt.receiptNumber}.pdf`;
+  const caption = receiptCaption(order.client.name);
+
+  const result = await sendMedia(order.client.phone, fs.readFileSync(fullPath).toString('base64'), {
+    mediatype: 'document',
+    mimetype: 'application/pdf',
+    fileName,
+    caption,
+  });
+  if (!result.ok) return res.status(502).json({ error: result.error });
+
+  // Aponta para o PDF que já está no disco — não duplica o arquivo.
+  await recordOutgoing(
+    req.userId!,
+    order.client.phone,
+    caption,
+    'document',
+    order.receipt.pdfPath.replace(/^\//, '')
+  ).catch((err) => console.error('[WA] Recibo enviado mas não registrado:', err?.message || err));
+
+  return res.json({ ok: true });
 });
 
 // GET /api/receipts

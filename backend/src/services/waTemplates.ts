@@ -59,6 +59,14 @@ export function postSaleTemplate(order: TemplateOrder, clientName?: string | nul
   );
 }
 
+/** Legenda do PDF do recibo enviado pelo WhatsApp. */
+export function receiptCaption(clientName?: string | null): string {
+  return (
+    `Oi ${firstName(clientName)}, segue o comprovante do seu pedido no ${ATELIER}. ` +
+    `Qualquer dúvida é só me chamar por aqui.`
+  );
+}
+
 export function birthdayTemplate(clientName?: string | null): string {
   return (
     `Oi ${firstName(clientName)}, feliz aniversário! Todo mundo aqui do ${ATELIER} ` +
