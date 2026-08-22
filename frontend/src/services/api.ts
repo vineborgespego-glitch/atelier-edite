@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://api.atelier.d3tech.com.br/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://api.72.60.12.248.sslip.io/api',
   headers: {
     'Content-Type': 'application/json',
   },

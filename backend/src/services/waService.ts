@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { ParsedWaEvent, extensionFor } from '../lib/waParser';
 import { transcribeAudioFile } from './waTranscription';
 import { describeImageFile } from './waVision';
+import { fetchMediaBase64 } from './waSend';
 
 /** Tipos de mensagem que trazem arquivo junto. */
 const MEDIA_TYPES = ['audio', 'image', 'video', 'document', 'sticker'];
@@ -240,8 +241,20 @@ export async function processWaEvent(event: ParsedWaEvent, userId: string) {
 
   // Mídia (áudio, imagem, vídeo, documento, figurinha): salva antes de gravar
   let mediaPath: string | null = null;
-  if (event.mediaBase64 && MEDIA_TYPES.includes(event.msgType)) {
-    mediaPath = saveMediaFile(event.mediaBase64, event.waMessageId, event.msgType, event.mimetype);
+  if (MEDIA_TYPES.includes(event.msgType)) {
+    // Sem base64 no webhook (WEBHOOK_BASE64 desligado na Evolution), busca sob demanda.
+    const base64 =
+      event.mediaBase64 ||
+      (event.waMessageId && event.chatJid
+        ? await fetchMediaBase64({
+            remoteJid: event.chatJid,
+            id: event.waMessageId,
+            fromMe: event.isFromMe,
+          })
+        : null);
+    if (base64) {
+      mediaPath = saveMediaFile(base64, event.waMessageId, event.msgType, event.mimetype);
+    }
   }
 
   const message = await prisma.waMessage.create({

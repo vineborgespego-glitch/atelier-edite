@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import { MessageCircle, Send, Loader2, AlertCircle, Paperclip } from 'lucide-react';
+import { MessageCircle, Send, Loader2, AlertCircle, Paperclip, Mic, Square } from 'lucide-react';
 
 interface WaMessage {
   id: string;
@@ -77,6 +77,8 @@ export default function WhatsAppInbox() {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [gravando, setGravando] = useState(false);
+  const recRef = useRef<MediaRecorder | null>(null);
 
   const loadContacts = async () => {
     try {
@@ -116,6 +118,38 @@ export default function WhatsAppInbox() {
     setSelected(c);
     setMessages([]);
     loadMessages(c.id);
+  };
+
+  // Grava pelo MediaRecorder nativo e reusa o mesmo envio do clipe.
+  // ponytail: Chrome só grava webm/opus; a Evolution converte no sendWhatsAppAudio.
+  // Se algum aparelho reclamar do formato, converter aqui antes de enviar.
+  const alternarGravacao = async () => {
+    if (gravando) {
+      recRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      const pedacos: Blob[] = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size) pedacos.push(e.data);
+      };
+      rec.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setGravando(false);
+        if (!pedacos.length) return;
+        const tipo = rec.mimeType || 'audio/webm';
+        const ext = tipo.includes('ogg') ? 'ogg' : 'webm';
+        // O backend roteia por mimetype: audio/* sai como mensagem de voz.
+        enviarArquivo(new File([new Blob(pedacos, { type: tipo })], `audio.${ext}`, { type: tipo }));
+      };
+      recRef.current = rec;
+      rec.start();
+      setGravando(true);
+    } catch {
+      alert('Não foi possível acessar o microfone. Verifique a permissão do navegador.');
+    }
   };
 
   const enviarArquivo = async (file: File) => {
@@ -264,6 +298,16 @@ export default function WhatsAppInbox() {
                   className="text-mauve hover:text-rosegold disabled:opacity-50 p-2"
                 >
                   <Paperclip size={18} />
+                </button>
+                <button
+                  onClick={alternarGravacao}
+                  disabled={sending}
+                  title={gravando ? 'Parar e enviar o áudio' : 'Gravar mensagem de voz'}
+                  className={`p-2 disabled:opacity-50 ${
+                    gravando ? 'text-red-500 animate-pulse' : 'text-mauve hover:text-rosegold'
+                  }`}
+                >
+                  {gravando ? <Square size={18} /> : <Mic size={18} />}
                 </button>
                 <input
                   value={draft}
