@@ -1,3 +1,8 @@
+// Express 4 não captura rejeição de handler async: a promise rejeita, ninguém
+// responde, e a requisição fica pendurada até a conexão cair — o navegador
+// mostra só "Network Error". Este import faz toda rota async encaminhar o erro
+// para o handler global lá embaixo. Precisa vir antes das rotas.
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
