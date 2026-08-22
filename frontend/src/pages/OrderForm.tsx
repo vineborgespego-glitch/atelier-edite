@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Check, Calendar, Plus, Trash2, User, Phone, X, AlertCircle } from 'lucide-react';
@@ -82,21 +82,30 @@ export default function OrderForm() {
     }
   }, [clientPhone, clientName, clients, isNewClient]);
 
-  const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, unitPrice: '' }]);
-  };
+  const filteredClients = useMemo(() => {
+    if (!clientSearch.trim()) return clients.slice(0, 30);
+    const query = clientSearch.toLowerCase().trim();
+    return clients.filter(c => 
+      c.name.toLowerCase().includes(query) || 
+      (c.phone && c.phone.includes(clientSearch))
+    ).slice(0, 50);
+  }, [clients, clientSearch]);
 
-  const removeItem = (index: number) => {
-    if (items.length > 1) {
-      setItems(items.filter((_, i) => i !== index));
-    }
-  };
+  const addItem = useCallback(() => {
+    setItems(prev => [...prev, { description: '', quantity: 1, unitPrice: '' }]);
+  }, []);
 
-  const updateItem = (index: number, field: string, value: string | number) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
-  };
+  const removeItem = useCallback((index: number) => {
+    setItems(prev => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
+  }, []);
+
+  const updateItem = useCallback((index: number, field: string, value: string | number) => {
+    setItems(prev => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,12 +197,16 @@ export default function OrderForm() {
   };
 
   const total = useMemo(() => {
-    return items.reduce((acc, item) => {
-      const priceStr = String(item.unitPrice).replace(',', '.');
+    let sum = 0;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!item.unitPrice) continue;
+      const priceStr = typeof item.unitPrice === 'string' ? item.unitPrice.replace(',', '.') : String(item.unitPrice);
       const price = parseFloat(priceStr) || 0;
       const qty = parseFloat(String(item.quantity)) || 0;
-      return acc + (price * qty);
-    }, 0);
+      sum += price * qty;
+    }
+    return sum;
   }, [items]);
 
   return (
@@ -267,16 +280,8 @@ export default function OrderForm() {
               {/* Dropdown de Sugestões */}
               {showDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/80 overflow-hidden z-50 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                  {clients.filter(c => 
-                    c.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
-                    (c.phone && c.phone.includes(clientSearch))
-                  ).length > 0 ? (
-                    clients
-                      .filter(c => 
-                        c.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
-                        (c.phone && c.phone.includes(clientSearch))
-                      )
-                      .map(c => (
+                  {filteredClients.length > 0 ? (
+                    filteredClients.map(c => (
                         <button
                           key={c.id}
                           type="button"
