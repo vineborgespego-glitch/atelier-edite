@@ -95,40 +95,53 @@ router.post('/:orderId/generate', async (req: AuthRequest, res: Response) => {
  * está em disco e o sendMedia já existe, então é só juntar os dois.
  */
 router.post('/:orderId/send', async (req: AuthRequest, res: Response) => {
-  const order = await prisma.order.findFirst({
-    where: { id: req.params.orderId, userId: req.userId },
-    include: { client: true, receipt: true },
-  });
+  const inicio = Date.now();
+  try {
+    const order = await prisma.order.findFirst({
+      where: { id: req.params.orderId, userId: req.userId },
+      include: { client: true, receipt: true },
+    });
 
-  if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
-  if (!order.client?.phone) return res.status(400).json({ error: 'Cliente sem telefone cadastrado' });
-  if (!order.receipt?.pdfPath) return res.status(400).json({ error: 'Recibo ainda não foi gerado' });
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    if (!order.client?.phone) return res.status(400).json({ error: 'Cliente sem telefone cadastrado' });
+    if (!order.receipt?.pdfPath) return res.status(400).json({ error: 'Recibo ainda não foi gerado' });
 
-  // pdfPath vem como "/uploads/arquivo.pdf"
-  const fullPath = path.resolve(process.cwd(), order.receipt.pdfPath.replace(/^\//, ''));
-  if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'Arquivo do recibo não encontrado' });
+    // pdfPath vem como "/uploads/arquivo.pdf"
+    const fullPath = path.resolve(process.cwd(), order.receipt.pdfPath.replace(/^\//, ''));
+    if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'Arquivo do recibo não encontrado' });
 
-  const fileName = `recibo-${order.receipt.receiptNumber}.pdf`;
-  const caption = receiptCaption(order.client.name);
+    const fileName = `recibo-${order.receipt.receiptNumber}.pdf`;
+    const caption = receiptCaption(order.client.name);
+    const base64 = fs.readFileSync(fullPath).toString('base64');
+    console.log(`[Recibo] Enviando ${fileName} (${Math.round(base64.length / 1024)}KB em base64)`);
 
-  const result = await sendMedia(order.client.phone, fs.readFileSync(fullPath).toString('base64'), {
-    mediatype: 'document',
-    mimetype: 'application/pdf',
-    fileName,
-    caption,
-  });
-  if (!result.ok) return res.status(502).json({ error: result.error });
+    const result = await sendMedia(order.client.phone, base64, {
+      mediatype: 'document',
+      mimetype: 'application/pdf',
+      fileName,
+      caption,
+    });
+    if (!result.ok) return res.status(502).json({ error: result.error });
 
-  // Aponta para o PDF que já está no disco — não duplica o arquivo.
-  await recordOutgoing(
-    req.userId!,
-    order.client.phone,
-    caption,
-    'document',
-    order.receipt.pdfPath.replace(/^\//, '')
-  ).catch((err) => console.error('[WA] Recibo enviado mas não registrado:', err?.message || err));
+    // Aponta para o PDF que já está no disco — não duplica o arquivo.
+    await recordOutgoing(
+      req.userId!,
+      order.client.phone,
+      caption,
+      'document',
+      order.receipt.pdfPath.replace(/^\//, '')
+    ).catch((err) => console.error('[WA] Recibo enviado mas não registrado:', err?.message || err));
 
-  return res.json({ ok: true });
+    return res.json({ ok: true });
+  } catch (err: any) {
+    // Sem este catch o Express 4 deixa a requisição pendurada: a promise
+    // rejeita, ninguém responde, e o navegador acusa "Network Error" —
+    // que não diz nada sobre a causa real.
+    console.error('[Recibo] Falha ao enviar:', err?.stack || err?.message || err);
+    return res.status(500).json({ error: err?.message || 'Erro ao enviar o recibo' });
+  } finally {
+    console.log(`[Recibo] /send respondeu em ${Date.now() - inicio}ms`);
+  }
 });
 
 // GET /api/receipts
