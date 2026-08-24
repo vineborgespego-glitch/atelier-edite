@@ -13,7 +13,6 @@ const HORARIO: Record<number, [number, number]> = {
   3: [9, 18],
   4: [9, 18],
   5: [9, 18],
-  6: [9, 13],
 };
 
 /** Dia da semana e hora em São Paulo, independente do TZ do servidor. */

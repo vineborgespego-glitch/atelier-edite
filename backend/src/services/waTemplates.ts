@@ -84,5 +84,5 @@ export function reactivationTemplate(clientName?: string | null): string {
 
 export const OFF_HOURS_TEXT =
   `Oi! Aqui é o ${ATELIER}. Recebi sua mensagem, mas estamos fora do horário de atendimento agora. ` +
-  `Respondo assim que abrirmos (segunda a sexta das 9h às 18h, sábado das 9h às 13h). ` +
+  `Respondo assim que abrirmos (segunda a sexta das 9h às 18h). ` +
   `Se for urgente, me conte aqui mesmo que eu já vejo pela manhã.`;
