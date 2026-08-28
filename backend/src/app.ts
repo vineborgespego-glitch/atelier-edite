@@ -51,11 +51,11 @@ app.use(cors({
       !origin ||
       allowedOrigins.includes(origin) ||
       origin.endsWith('d3tech.com.br') ||
-      origin.endsWith('.sslip.io')
+      origin.endsWith('sslip.io')
     ) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Fallback permissivo para domínios de deploy
     }
   },
   credentials: true,

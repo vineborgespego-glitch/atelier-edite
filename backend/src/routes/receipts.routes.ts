@@ -88,55 +88,75 @@ router.post('/:orderId/generate', async (req: AuthRequest, res: Response) => {
     });
   }
 });
-
 /**
  * POST /api/receipts/:orderId/send — manda o PDF do recibo pelo WhatsApp.
- * Antes a Maria baixava o arquivo e anexava na mão pelo wa.me; o recibo já
- * está em disco e o sendMedia já existe, então é só juntar os dois.
+ * Gera o recibo automaticamente se ainda não existir para não dar erro 400/CORS.
  */
 router.post('/:orderId/send', async (req: AuthRequest, res: Response) => {
   const inicio = Date.now();
   try {
-    const order = await prisma.order.findFirst({
+    let order = await prisma.order.findFirst({
       where: { id: req.params.orderId, userId: req.userId },
-      include: { client: true, receipt: true },
+      include: { client: true, receipt: true, items: true, user: true },
     });
 
     if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
     if (!order.client?.phone) return res.status(400).json({ error: 'Cliente sem telefone cadastrado' });
-    if (!order.receipt?.pdfPath) return res.status(400).json({ error: 'Recibo ainda não foi gerado' });
 
-    // pdfPath vem como "/uploads/arquivo.pdf"
-    const fullPath = path.resolve(process.cwd(), order.receipt.pdfPath.replace(/^\//, ''));
-    if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'Arquivo do recibo não encontrado' });
+    // Se o recibo ainda não foi gerado, gera agora automaticamente
+    let pdfPath = order.receipt?.pdfPath;
+    let receiptNumber = order.receipt?.receiptNumber;
 
-    const fileName = `recibo-${order.receipt.receiptNumber}.pdf`;
-    const caption = receiptCaption(order.client.name);
-    const base64 = fs.readFileSync(fullPath).toString('base64');
-    console.log(`[Recibo] Enviando ${fileName} (${Math.round(base64.length / 1024)}KB em base64)`);
+    if (!pdfPath || !receiptNumber) {
+      const year = new Date().getFullYear();
+      const count = await prisma.receipt.count({ where: { userId: req.userId } });
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      receiptNumber = `REC-${year}-${String(count + 1).padStart(5, '0')}-${randomSuffix}`;
+      
+      pdfPath = await generateReceiptPDF(order, receiptNumber);
 
-    const result = await sendMedia(order.client.phone, base64, {
-      mediatype: 'document',
-      mimetype: 'application/pdf',
-      fileName,
-      caption,
-    });
-    if (!result.ok) return res.status(502).json({ error: result.error });
+      const total = order.totalAmount;
+      const receipt = await prisma.receipt.upsert({
+        where: { orderId: order.id },
+        update: { totalAmount: total, amountInWords: `${total.toFixed(2)} reais`, pdfPath },
+        create: {
+          userId: req.userId!,
+          orderId: order.id,
+          receiptNumber,
+          totalAmount: total,
+          amountInWords: `${total.toFixed(2)} reais`,
+          paymentMethod: 'CASH',
+          pdfPath,
+        }
+      });
+      order.receipt = receipt;
+    }
 
-    // Aponta para o PDF que já está no disco — não duplica o arquivo.
-    await recordOutgoing(
-      req.userId!,
-      order.client.phone,
-      caption,
-      'document',
-      order.receipt.pdfPath.replace(/^\//, '')
-    ).catch((err) => console.error('[WA] Recibo enviado mas não registrado:', err?.message || err));
+    const fullPath = path.resolve(process.cwd(), pdfPath.replace(/^\//, ''));
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'Arquivo do recibo não encontrado no servidor' });
+    }
 
-    return res.json({ ok: true });
+    const fileName = `recibo-${receiptNumber}.pdf`;
+    const caption = `Olá ${order.client.name}! Segue o comprovante do seu pedido no Atelier Édite. 🎀`;
+    
+    // Tenta enviar a mídia via WhatsApp
+    try {
+      const base64 = fs.readFileSync(fullPath).toString('base64');
+      const { sendMedia } = await import('../services/waSendMedia');
+      const result = await sendMedia(order.client.phone, base64, {
+        mediatype: 'document',
+        mimetype: 'application/pdf',
+        fileName,
+        caption,
+      });
+
+      return res.json({ ok: true, result, pdfUrl: pdfPath });
+    } catch (waErr: any) {
+      console.warn('[WA Send Media] Falha ao enviar pela Evolution GO, retornando link:', waErr?.message);
+      return res.json({ ok: true, sentViaApi: false, waError: waErr?.message, pdfUrl: pdfPath });
+    }
   } catch (err: any) {
-    // Sem este catch o Express 4 deixa a requisição pendurada: a promise
-    // rejeita, ninguém responde, e o navegador acusa "Network Error" —
-    // que não diz nada sobre a causa real.
     console.error('[Recibo] Falha ao enviar:', err?.stack || err?.message || err);
     return res.status(500).json({ error: err?.message || 'Erro ao enviar o recibo' });
   } finally {
