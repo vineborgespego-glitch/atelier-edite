@@ -143,7 +143,7 @@ router.post('/:orderId/send', async (req: AuthRequest, res: Response) => {
     // Tenta enviar a mídia via WhatsApp
     try {
       const base64 = fs.readFileSync(fullPath).toString('base64');
-      const { sendMedia } = await import('../services/waSendMedia');
+      const { sendMedia } = await import('../services/waSend');
       const result = await sendMedia(order.client.phone, base64, {
         mediatype: 'document',
         mimetype: 'application/pdf',
