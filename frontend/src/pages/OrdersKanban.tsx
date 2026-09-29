@@ -11,9 +11,26 @@ const VISUAL_TO_BACKEND: Record<string, string> = {
   'Entregue': 'DELIVERED',
 };
 
-// Os avisos de status no WhatsApp agora saem do backend (waTemplates/waAuto),
-// direto pela Evolution. O link wa.me que abria uma aba foi removido daqui
-// para o cliente não receber a mesma mensagem duas vezes.
+// Envia aviso manual via WhatsApp Web (wa.me) ao mudar para Pronto ou Entregue.
+// Abre uma nova aba com a mensagem já pronta — basta clicar em Enviar.
+function notifyClientByStatus(order: any, newVisualStatus: string) {
+  if (newVisualStatus !== 'Pronto' && newVisualStatus !== 'Entregue') return;
+
+  const digits = (order?.clientPhone || '').replace(/\D/g, '');
+  if (!digits) return;
+  const phone = '55' + digits;
+  const clientName = (order?.client || 'cliente').split(' ')[0];
+
+  const INSTAGRAM_URL = 'https://instagram.com/borgesmariaedite';
+  const GOOGLE_URL = 'https://www.google.com/maps?cid=18089226519185099016';
+
+  const text = newVisualStatus === 'Pronto'
+    ? `Oi ${clientName}, aqui e o Atelier Edite. Seu pedido esta pronto! Pode passar no atelier para retirar quando for melhor para voce.`
+    : `${clientName}, foi um prazer costurar para voce! Se quiser acompanhar nossos trabalhos, siga a gente no Instagram: ${INSTAGRAM_URL} — e se puder, deixe sua avaliacao no Google, ajuda muito o atelier: ${GOOGLE_URL}`;
+
+  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  setTimeout(() => window.open(waUrl, '_blank'), 300);
+}
 
 export default function OrdersKanban() {
   const navigate = useNavigate();
@@ -93,6 +110,7 @@ export default function OrdersKanban() {
 
     const nextVisualStatus = statusOrder[currentIndex + 1];
     const backendStatus = VISUAL_TO_BACKEND[nextVisualStatus];
+    const order = orders.find(o => o.id === orderId);
 
     try {
       await api.patch(`/orders/${orderId}/status`, { status: backendStatus });
@@ -101,6 +119,7 @@ export default function OrdersKanban() {
         const progress = nextVisualStatus === 'Recebido' ? 25 : nextVisualStatus === 'Em Costura' ? 50 : nextVisualStatus === 'Pronto' ? 75 : 100;
         return { ...o, status: nextVisualStatus, progress };
       }));
+      notifyClientByStatus(order, nextVisualStatus);
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Erro ao avançar pedido.');
@@ -227,6 +246,7 @@ export default function OrdersKanban() {
 
     try {
       await api.patch(`/orders/${id}/status`, { status: backendStatus });
+      notifyClientByStatus(order, colStatus);
     } catch (error) {
       console.error('Failed to update status:', error);
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: order.status, progress: order.progress } : o));
