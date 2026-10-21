@@ -13,7 +13,8 @@ const VISUAL_TO_BACKEND: Record<string, string> = {
 
 // Envia aviso manual via WhatsApp Web (wa.me) ao mudar para Pronto ou Entregue.
 // Abre uma nova aba com a mensagem já pronta — basta clicar em Enviar.
-function notifyClientByStatus(order: any, newVisualStatus: string) {
+// Para 'Entregue', envia apenas se for a primeira entrega (primeira vez do cliente).
+async function notifyClientByStatus(order: any, newVisualStatus: string) {
   if (newVisualStatus !== 'Pronto' && newVisualStatus !== 'Entregue') return;
 
   const digits = (order?.clientPhone || '').replace(/\D/g, '');
@@ -23,6 +24,26 @@ function notifyClientByStatus(order: any, newVisualStatus: string) {
 
   const INSTAGRAM_URL = 'https://instagram.com/borgesmariaedite';
   const GOOGLE_URL = 'https://www.google.com/maps?cid=18089226519185099016';
+
+  if (newVisualStatus === 'Entregue' && order?.clientId) {
+    try {
+      // Verifica se o cliente já teve outro pedido entregue ou arquivado anteriormente
+      const [resDelivered, resArchived] = await Promise.all([
+        api.get(`/orders?clientId=${order.clientId}&status=DELIVERED&limit=2`),
+        api.get(`/orders?clientId=${order.clientId}&status=ARCHIVED&limit=1&includeArchived=true`),
+      ]);
+
+      const otherDelivered = (resDelivered.data?.orders || []).filter((o: any) => o.id !== order.id);
+      const otherArchived = resArchived.data?.orders || [];
+
+      // Se já tem outro pedido entregue ou arquivado, o cliente já recebeu a mensagem no passado
+      if (otherDelivered.length > 0 || otherArchived.length > 0) {
+        return;
+      }
+    } catch (err) {
+      console.warn('Não foi possível verificar histórico de pedidos do cliente:', err);
+    }
+  }
 
   const text = newVisualStatus === 'Pronto'
     ? `Oi ${clientName}, aqui e o Atelier Edite. Seu pedido esta pronto! Pode passar no atelier para retirar quando for melhor para voce.`
@@ -170,6 +191,7 @@ export default function OrdersKanban() {
 
     return {
       id: o.id,
+      clientId: o.clientId || o.client?.id,
       number: o.orderNumber?.split('-').pop() || '0000',
       client: o.client.name,
       clientPhone: o.client.phone || '',
