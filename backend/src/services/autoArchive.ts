@@ -2,17 +2,18 @@ import { prisma } from '../lib/prisma';
 import { subDays } from 'date-fns';
 
 /**
- * Automagically archives orders that have been DELIVERED for more than 7 days.
+ * Automagically archives orders that have been DELIVERED for more than 15 days.
+ * O atelier tem prazo de 15 dias para retoques/reconcerto após a entrega.
  */
 export async function runAutoArchive() {
-  const sevenDaysAgo = subDays(new Date(), 7);
+  const fifteenDaysAgo = subDays(new Date(), 15);
 
   try {
     const result = await prisma.order.updateMany({
       where: {
         status: 'DELIVERED',
         deliveredAt: {
-          lte: sevenDaysAgo
+          lte: fifteenDaysAgo
         }
       },
       data: {
