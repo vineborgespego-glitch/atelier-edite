@@ -46,7 +46,7 @@ async function notifyClientByStatus(order: any, newVisualStatus: string) {
   }
 
   const text = newVisualStatus === "Pronto"
-    ? `Oi ${clientName}, aqui é do Atelier Édite. Seu pedido está pronto! Pode passar no atelier para retirar quando for melhor para você.`
+    ? `Oi ${clientName}, aqui é do Atelier Edite. Seu pedido está pronto! Pode passar no atelier para retirar quando for melhor para você.`
     : `${clientName}, foi um prazer costurar para você! 🥰\n\nSe quiser acompanhar nossos trabalhos, siga a gente no Instagram:\n${INSTAGRAM_URL}\n\nE se puder, deixe sua avaliação no Google, ajuda muito o atelier:\n${GOOGLE_URL}`;
 
   const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
