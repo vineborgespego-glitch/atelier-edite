@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Scissors, CheckSquare, CheckCircle2, ChevronRight, Plus, FileText, GripVertical, Package, X, Download, Loader2, Printer, Archive, DollarSign, Calendar, Pencil, Trash2, Search } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -20,7 +20,7 @@ async function notifyClientByStatus(order: any, newVisualStatus: string) {
   const digits = (order?.clientPhone || '').replace(/\D/g, '');
   if (!digits) return;
   const phone = '55' + digits;
-  const clientName = (order?.client || 'cliente').split(' ')[0];
+  const clientName = (order?.client || "cliente").trim().split(/\s+/)[0];
 
   const INSTAGRAM_URL = 'https://instagram.com/borgesmariaedite';
   const GOOGLE_URL = 'https://www.google.com/maps?cid=18089226519185099016';
@@ -45,9 +45,9 @@ async function notifyClientByStatus(order: any, newVisualStatus: string) {
     }
   }
 
-  const text = newVisualStatus === 'Pronto'
-    ? `Oi ${clientName}, aqui e o Atelier Edite. Seu pedido esta pronto! Pode passar no atelier para retirar quando for melhor para voce.`
-    : `${clientName}, foi um prazer costurar para voce! Se quiser acompanhar nossos trabalhos, siga a gente no Instagram: ${INSTAGRAM_URL} — e se puder, deixe sua avaliacao no Google, ajuda muito o atelier: ${GOOGLE_URL}`;
+  const text = newVisualStatus === "Pronto"
+    ? `Oi ${clientName}, aqui é do Atelier Édite. Seu pedido está pronto! Pode passar no atelier para retirar quando for melhor para você.`
+    : `${clientName}, foi um prazer costurar para você! 🥰\n\nSe quiser acompanhar nossos trabalhos, siga a gente no Instagram:\n${INSTAGRAM_URL}\n\nE se puder, deixe sua avaliação no Google, ajuda muito o atelier:\n${GOOGLE_URL}`;
 
   const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
   setTimeout(() => window.open(waUrl, '_blank'), 300);
