@@ -21,7 +21,8 @@ export default function OrderHistory() {
     setLoading(true);
     try {
       // Fetch only archived orders
-      const response = await api.get(`/orders?includeArchived=true&status=ARCHIVED&page=${page}&limit=10`);
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
+      const response = await api.get(`/orders?includeArchived=true&status=ARCHIVED&page=${page}&limit=10${searchParam}`);
       setOrders(response.data.orders);
       setTotal(response.data.total);
     } catch (error) {

@@ -29,7 +29,7 @@ async function notifyStatusChange(
 
 // GET /api/orders
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const { status, clientId, page = '1', limit = '20', includeArchived = 'false' } = req.query as Record<string, string>;
+  const { status, clientId, search, page = '1', limit = '20', includeArchived = 'false' } = req.query as Record<string, string>;
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const where: any = { userId: req.userId };
@@ -42,6 +42,16 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 
   if (clientId) where.clientId = clientId;
+
+  if (search && search.trim()) {
+    const term = search.trim();
+    where.OR = [
+      { orderNumber: { contains: term, mode: 'insensitive' } },
+      { title: { contains: term, mode: 'insensitive' } },
+      { client: { name: { contains: term, mode: 'insensitive' } } },
+      { client: { phone: { contains: term } } },
+    ];
+  }
 
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
